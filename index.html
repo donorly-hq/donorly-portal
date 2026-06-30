@@ -1,0 +1,1493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Donorly — Fundraising Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--emerald:#0a4f3f;--emerald-light:#0d6b55;--emerald-dark:#073829;--gold:#a87f2f;--gold-light:#c9a052;--cream:#faf6ec;--cream2:#f5f0e0;--white:#ffffff;--text:#1a2e26;--text-muted:#5a7268;--border:#d9cfa8;--danger:#c0392b;--success:#27ae60;--warning:#e67e22;--info:#2176ae;--shadow:0 4px 24px rgba(10,79,63,.10);--shadow-lg:0 8px 40px rgba(10,79,63,.15);--radius:14px;--radius-sm:8px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Manrope',sans-serif;background:var(--cream);color:var(--text);min-height:100vh;}
+h1,h2,h3,h4{font-family:'Cormorant Garamond',serif;}
+#auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--emerald-dark) 0%,var(--emerald) 60%,#1a6b54 100%);position:relative;overflow:hidden;}
+#auth-screen::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 20% 50%,rgba(168,127,47,.15) 0%,transparent 50%),radial-gradient(circle at 80% 20%,rgba(168,127,47,.10) 0%,transparent 40%);}
+.auth-box{background:var(--white);border-radius:20px;padding:44px;width:420px;box-shadow:0 20px 80px rgba(0,0,0,.3);position:relative;z-index:1;}
+.auth-logo{text-align:center;margin-bottom:28px;}.auth-logo .star{font-size:38px;margin-bottom:6px;display:block;}.auth-logo h1{font-size:30px;color:var(--emerald);font-weight:700;}.auth-logo p{color:var(--text-muted);font-size:12px;}
+.auth-tabs{display:flex;background:var(--cream);border-radius:10px;padding:4px;margin-bottom:24px;}.auth-tab{flex:1;text-align:center;padding:9px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-muted);transition:all .2s;}.auth-tab.active{background:var(--emerald);color:white;}
+#app{display:none;min-height:100vh;}
+.sidebar{width:255px;background:var(--emerald-dark);position:fixed;top:0;left:0;bottom:0;display:flex;flex-direction:column;z-index:100;overflow-y:auto;}
+.sidebar-logo{padding:22px 18px 14px;border-bottom:1px solid rgba(255,255,255,.1);}.sidebar-logo h2{color:white;font-size:19px;font-weight:700;}.sidebar-logo span{color:var(--gold-light);font-size:11px;}
+.sidebar-user{padding:12px 18px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px;}.user-avatar{width:34px;height:34px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:12px;flex-shrink:0;}.user-info .name{color:white;font-size:13px;font-weight:600;}.user-info .role{color:var(--gold-light);font-size:10px;text-transform:uppercase;letter-spacing:.5px;}
+.nav{flex:1;padding:10px 8px;}.nav-label{color:rgba(255,255,255,.4);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:4px 10px 5px;}.nav-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;color:rgba(255,255,255,.7);font-size:12px;font-weight:500;cursor:pointer;transition:all .2s;margin-bottom:1px;}.nav-item:hover{background:rgba(255,255,255,.08);color:white;}.nav-item.active{background:var(--gold);color:white;}.nav-item .icon{width:15px;text-align:center;font-size:13px;}.nav-badge{margin-left:auto;background:var(--danger);color:white;font-size:9px;font-weight:700;padding:2px 5px;border-radius:10px;}.nav-section{margin-bottom:4px;}
+.sidebar-footer{padding:12px 18px;border-top:1px solid rgba(255,255,255,.08);}
+.main{margin-left:255px;min-height:100vh;}.topbar{background:white;padding:12px 26px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}.topbar-title h2{font-size:19px;color:var(--emerald);}.topbar-title p{font-size:11px;color:var(--text-muted);}.topbar-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
+.content{padding:22px 26px;}.page{display:none;}.page.active{display:block;}
+.card{background:white;border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);border:1px solid rgba(217,207,168,.4);}.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}.card-title{font-size:16px;color:var(--emerald);font-weight:600;}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px;}.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+.stat-card{background:white;border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);border:1px solid rgba(217,207,168,.4);}.stat-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;margin-bottom:9px;}.stat-icon.emerald{background:rgba(10,79,63,.1);}.stat-icon.gold{background:rgba(168,127,47,.1);}.stat-icon.blue{background:rgba(41,128,185,.1);}.stat-icon.purple{background:rgba(142,68,173,.1);}.stat-icon.red{background:rgba(192,57,43,.1);}.stat-value{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:700;color:var(--emerald);line-height:1;}.stat-label{font-size:10px;color:var(--text-muted);margin-top:3px;}.stat-change{font-size:10px;margin-top:4px;font-weight:600;}.stat-change.up{color:var(--success);}
+.table-wrap{overflow-x:auto;}table{width:100%;border-collapse:collapse;}th{text-align:left;padding:8px 11px;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--border);white-space:nowrap;}td{padding:9px 11px;font-size:12px;border-bottom:1px solid rgba(217,207,168,.3);vertical-align:middle;}tr:last-child td{border-bottom:none;}tr:hover td{background:var(--cream);}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600;}.badge-green{background:rgba(39,174,96,.12);color:#1e8449;}.badge-gold{background:rgba(168,127,47,.12);color:var(--gold);}.badge-blue{background:rgba(41,128,185,.12);color:#2176ae;}.badge-red{background:rgba(192,57,43,.12);color:var(--danger);}.badge-gray{background:rgba(90,114,104,.12);color:var(--text-muted);}.badge-purple{background:rgba(142,68,173,.12);color:#8e44ad;}.badge-orange{background:rgba(230,126,34,.12);color:#e67e22;}
+.progress-bar{height:7px;background:var(--cream2);border-radius:99px;overflow:hidden;}.progress-fill{height:100%;background:linear-gradient(90deg,var(--emerald),var(--gold-light));border-radius:99px;transition:width .6s;}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s;}.modal-overlay.open{opacity:1;pointer-events:all;}.modal{background:white;border-radius:20px;width:100%;max-width:580px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);transform:translateY(20px);transition:transform .2s;}.modal-overlay.open .modal{transform:translateY(0);}.modal-wide{max-width:680px;}.modal-header{padding:20px 24px 0;display:flex;align-items:center;justify-content:space-between;}.modal-header h3{font-size:19px;color:var(--emerald);}.modal-close{background:var(--cream);border:none;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);}.modal-body{padding:16px 24px 22px;}.modal-footer{padding:0 24px 20px;display:flex;gap:9px;justify-content:flex-end;}
+.form-group{margin-bottom:12px;}.form-group label{display:block;font-size:10px;font-weight:600;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;}.form-group input,.form-group select,.form-group textarea{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:'Manrope',sans-serif;font-size:13px;color:var(--text);background:var(--cream);transition:border-color .2s;}.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--emerald);background:white;}.form-group textarea{resize:vertical;min-height:65px;}.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}.form-section{background:var(--cream);border-radius:10px;padding:12px;margin-bottom:12px;}.form-section-title{font-size:12px;font-weight:700;color:var(--emerald);margin-bottom:10px;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:var(--radius-sm);font-family:'Manrope',sans-serif;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .2s;}.btn-primary{background:var(--emerald);color:white;}.btn-primary:hover{background:var(--emerald-light);}.btn-gold{background:var(--gold);color:white;}.btn-gold:hover{background:var(--gold-light);}.btn-outline{background:transparent;border:1.5px solid var(--emerald);color:var(--emerald);}.btn-outline:hover{background:var(--emerald);color:white;}.btn-danger{background:var(--danger);color:white;}.btn-warning{background:var(--warning);color:white;}.btn-info{background:var(--info);color:white;}.btn-sm{padding:5px 11px;font-size:11px;}.btn-xs{padding:3px 7px;font-size:10px;}.btn-full{width:100%;justify-content:center;}
+.timeline{position:relative;padding-left:28px;}.timeline::before{content:'';position:absolute;left:9px;top:0;bottom:0;width:2px;background:var(--border);}.timeline-item{position:relative;margin-bottom:16px;}.timeline-dot{position:absolute;left:-22px;width:13px;height:13px;border-radius:50%;border:2px solid white;top:2px;}.timeline-dot.done{background:var(--success);}.timeline-dot.active{background:var(--gold);}.timeline-dot.pending{background:var(--border);}.timeline-title{font-size:12px;font-weight:600;}.timeline-desc{font-size:11px;color:var(--text-muted);margin-top:2px;}
+.followup-week{background:white;border-radius:var(--radius);padding:12px 14px;margin-bottom:9px;border-left:4px solid var(--border);display:flex;align-items:flex-start;gap:12px;box-shadow:var(--shadow);}.followup-week.done{border-left-color:var(--success);}.followup-week.active{border-left-color:var(--gold);background:#fffbf0;}.followup-week.pending{border-left-color:var(--border);opacity:.7;}.week-num{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0;}.week-num.done{background:var(--success);color:white;}.week-num.active{background:var(--gold);color:white;}.week-num.pending{background:var(--cream2);color:var(--text-muted);}
+.alert{padding:10px 14px;border-radius:9px;font-size:12px;margin-bottom:14px;display:flex;align-items:flex-start;gap:9px;}.alert-warning{background:#fff8e1;border:1px solid #f39c12;color:#b7770d;}.alert-info{background:#e8f4fd;border:1px solid #3498db;color:#1a5276;}.alert-success{background:#eafaf1;border:1px solid #2ecc71;color:#1e8449;}.alert-danger{background:#fdf2f0;border:1px solid var(--danger);color:var(--danger);}
+.unprocessed-item{background:white;border-radius:10px;padding:12px;margin-bottom:7px;border-left:4px solid var(--warning);box-shadow:var(--shadow);display:flex;align-items:center;gap:11px;}
+.resource-card{background:white;border-radius:var(--radius);padding:16px;text-align:center;box-shadow:var(--shadow);border:1px solid rgba(217,207,168,.4);cursor:pointer;transition:all .2s;}.resource-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-2px);}.resource-icon{font-size:30px;margin-bottom:7px;}
+.amb-topbar{background:var(--emerald-dark);padding:13px 26px;display:flex;align-items:center;justify-content:space-between;}.amb-topbar h2{color:white;font-size:17px;}
+.welcome-banner{background:linear-gradient(135deg,var(--emerald) 0%,var(--emerald-dark) 100%);border-radius:var(--radius);padding:26px;color:white;position:relative;overflow:hidden;margin-bottom:18px;}.welcome-banner::before{content:'🌟';position:absolute;right:18px;top:14px;font-size:64px;opacity:.1;}.welcome-banner h2{font-size:22px;margin-bottom:5px;}.welcome-banner p{font-size:13px;opacity:.85;line-height:1.6;}.gold-text{color:var(--gold-light);font-weight:600;}
+.pledge-card-preview{background:linear-gradient(135deg,var(--emerald-dark),var(--emerald));color:white;border-radius:12px;padding:16px;margin-bottom:14px;}.pledge-card-preview h4{font-size:15px;margin-bottom:3px;}.pledge-card-preview p{font-size:11px;opacity:.8;}
+#toast-container{position:fixed;top:18px;right:18px;z-index:9999;display:flex;flex-direction:column;gap:7px;}.toast{background:white;border-radius:9px;padding:11px 15px;box-shadow:0 4px 20px rgba(0,0,0,.15);display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500;min-width:240px;border-left:4px solid var(--success);animation:slideIn .3s ease;}.toast.error{border-left-color:var(--danger);}.toast.info{border-left-color:var(--info);}.toast.warning{border-left-color:var(--warning);}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+.search-bar{position:relative;}.search-bar input{padding-left:32px;width:100%;padding-top:8px;padding-bottom:8px;border:1.5px solid var(--border);border-radius:8px;font-family:'Manrope',sans-serif;font-size:12px;}.search-bar .si{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:12px;pointer-events:none;}
+.divider{border:none;border-top:1px solid var(--border);margin:14px 0;}
+.empty-state{text-align:center;padding:36px 18px;color:var(--text-muted);}.empty-state .empty-icon{font-size:36px;margin-bottom:9px;}.empty-state p{font-size:12px;}
+.pledge-meter{background:var(--cream);border-radius:var(--radius);padding:16px;}
+.tab-bar{display:flex;gap:3px;background:var(--cream);border-radius:9px;padding:3px;margin-bottom:16px;}.tab-btn{padding:7px 14px;border-radius:7px;font-size:11px;font-weight:600;color:var(--text-muted);cursor:pointer;transition:all .2s;border:none;background:transparent;font-family:'Manrope',sans-serif;}.tab-btn.active{background:var(--emerald);color:white;}
+.vol-card{background:white;border-radius:var(--radius);padding:15px;box-shadow:var(--shadow);border:1px solid rgba(217,207,168,.4);}.vol-header{display:flex;align-items:center;gap:9px;margin-bottom:11px;}.vol-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:13px;flex-shrink:0;}
+.loading{text-align:center;padding:24px;color:var(--text-muted);font-size:13px;}
+@media(max-width:900px){.sidebar{display:none;}.main{margin-left:0;}.grid-4{grid-template-columns:repeat(2,1fr);}.grid-3{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-logo"><span class="star">✦</span><h1>Donorly</h1><p>Fundraising Portal — Powered by Purpose</p></div>
+    <div class="auth-tabs"><div class="auth-tab active" onclick="switchAuthTab('admin')">Admin Login</div><div class="auth-tab" onclick="switchAuthTab('ambassador')">Ambassador Login</div></div>
+    <div id="admin-login-form">
+      <div class="form-group"><label>Email</label><input type="email" id="admin-email"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="admin-pass"></div>
+      <button class="btn btn-primary btn-full" onclick="loginAdmin()">Sign In as Admin</button>
+    </div>
+    <div id="amb-login-form" style="display:none;">
+      <div class="form-group"><label>Email</label><input type="email" id="amb-email"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="amb-pass"></div>
+      <button class="btn btn-gold btn-full" onclick="loginAmbassador()">Sign In as Ambassador</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN APP -->
+<div id="app">
+  <div class="sidebar">
+    <div class="sidebar-logo"><h2>✦ Donorly</h2><span>Fundraising Portal</span></div>
+    <div class="sidebar-user"><div class="user-avatar" id="sidebar-avatar">S</div><div class="user-info"><div class="name" id="sidebar-name">Admin</div><div class="role" id="sidebar-role">Admin</div></div></div>
+    <nav class="nav">
+      <div class="nav-section"><div class="nav-label">Overview</div><div class="nav-item active" onclick="showPage('dashboard')"><span class="icon">🏠</span>Dashboard</div></div>
+      <div class="nav-section"><div class="nav-label">People</div>
+        <div class="nav-item" onclick="showPage('ambassadors')"><span class="icon">🤝</span>Ambassadors <span class="nav-badge" id="amb-badge">0</span></div>
+        <div class="nav-item" onclick="showPage('donors')"><span class="icon">💛</span>Donors &amp; Pledges</div>
+        <div class="nav-item" onclick="showPage('volunteers')"><span class="icon">👥</span>Volunteers</div>
+      </div>
+      <div class="nav-section"><div class="nav-label">Operations</div>
+        <div class="nav-item" onclick="showPage('pledgecards')"><span class="icon">📋</span>Pledge Cards <span class="nav-badge" id="unprocessed-badge">0</span></div>
+        <div class="nav-item" onclick="showPage('followups')"><span class="icon">🔔</span>Follow-ups <span class="nav-badge" id="fu-badge">0</span></div>
+        <div class="nav-item" onclick="showPage('events')"><span class="icon">🎙️</span>Events</div>
+        <div class="nav-item" onclick="showPage('townhalls')"><span class="icon">🏛️</span>Town Halls</div>
+        <div class="nav-item" onclick="showPage('messages')"><span class="icon">💬</span>Messages</div>
+      </div>
+      <div class="nav-section"><div class="nav-label">Finance</div>
+        <div class="nav-item" onclick="showPage('recurring')"><span class="icon">🔄</span>Recurring Pledges</div>
+        <div class="nav-item" onclick="showPage('corporate')"><span class="icon">🏢</span>Corporate Match</div>
+        <div class="nav-item" onclick="showPage('taxreceipts')"><span class="icon">🧾</span>Tax Receipts</div>
+      </div>
+      <div class="nav-section"><div class="nav-label">Tools</div>
+        <div class="nav-item" onclick="showPage('calllog')"><span class="icon">📞</span>Call Log</div>
+        <div class="nav-item" onclick="showPage('cashboxes')"><span class="icon">💵</span>Cash &amp; Donation Boxes</div>
+        <div class="nav-item" onclick="showPage('qrcard')"><span class="icon">🪪</span>QR Business Card</div>
+        <div class="nav-item" onclick="showPage('mpmguide')"><span class="icon">📱</span>MPM Pro Guide</div>
+      </div>
+      <div class="nav-section"><div class="nav-label">Resources</div><div class="nav-item" onclick="showPage('resources')"><span class="icon">📁</span>Resources</div></div>
+    </nav>
+    <div class="sidebar-footer"><button class="btn btn-outline btn-sm btn-full" onclick="logout()">Sign Out</button></div>
+  </div>
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title"><h2 id="page-title">Dashboard</h2><p id="page-subtitle">Welcome back, Admin 🤲</p></div>
+      <div class="topbar-actions">
+        <button class="btn btn-outline btn-sm" onclick="openModal('add-volunteer-modal')">+ Volunteer</button>
+        <button class="btn btn-primary btn-sm" onclick="openModal('add-ambassador-modal')">+ Ambassador</button>
+        <button class="btn btn-gold btn-sm" onclick="showPage('pledgecards');setTimeout(()=>{switchPledgeTab('new',null);},100)">📋 New Pledge Card</button>
+      </div>
+    </div>
+    <div class="content">
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <div class="grid-4">
+    <div class="stat-card"><div class="stat-icon emerald">🤝</div><div class="stat-value" id="stat-amb">0</div><div class="stat-label">Ambassadors</div></div>
+    <div class="stat-card"><div class="stat-icon gold">💛</div><div class="stat-value" id="stat-don">0</div><div class="stat-label">Donors</div></div>
+    <div class="stat-card"><div class="stat-icon blue">💰</div><div class="stat-value" id="stat-pledged">$0</div><div class="stat-label">Total Pledged</div></div>
+    <div class="stat-card"><div class="stat-icon purple">🔄</div><div class="stat-value" id="stat-mrr">$0</div><div class="stat-label">Monthly Recurring</div></div>
+  </div>
+  <div class="grid-2" style="margin-bottom:18px;">
+    <div class="card">
+      <div class="card-header"><div class="card-title">Campaign Progress</div><span class="badge badge-green">Active</span></div>
+      <div class="pledge-meter">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:7px;">
+          <div><div style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:700;color:var(--emerald)" id="dash-raised">$0</div><div style="font-size:10px;color:var(--text-muted)">of $500,000 goal</div></div>
+          <div style="font-size:18px;font-weight:700;color:var(--gold)" id="dash-pct">0%</div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="dash-progress" style="width:0%"></div></div>
+        <div style="display:flex;justify-content:space-between;margin-top:5px;font-size:9px;color:var(--text-muted)"><span>$0</span><span>$250k</span><span>$500k</span></div>
+      </div>
+      <hr class="divider">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;">
+        <div><div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:700;color:var(--emerald)" id="dash-col">$0</div><div style="font-size:9px;color:var(--text-muted)">Collected</div></div>
+        <div><div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:700;color:var(--gold)" id="dash-pend">$0</div><div style="font-size:9px;color:var(--text-muted)">Pending</div></div>
+        <div><div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:700;color:var(--info)" id="dash-corp">$0</div><div style="font-size:9px;color:var(--text-muted)">Corp Match</div></div>
+      </div>
+    </div>
+    <div class="card"><div class="card-header"><div class="card-title">⚠️ Unprocessed Pledge Cards</div><button class="btn btn-outline btn-sm" onclick="showPage('pledgecards')">View All</button></div><div id="dash-unprocessed"><div class="loading">Loading...</div></div></div>
+  </div>
+  <div class="grid-3">
+    <div class="card"><div class="card-header"><div class="card-title">Ambassadors</div><button class="btn btn-outline btn-sm" onclick="showPage('ambassadors')">All</button></div><div id="dash-amb-list"><div class="loading">Loading...</div></div></div>
+    <div class="card"><div class="card-header"><div class="card-title">Pending Follow-ups</div><button class="btn btn-outline btn-sm" onclick="showPage('followups')">All</button></div><div id="dash-fu-list"><div class="loading">Loading...</div></div></div>
+    <div class="card"><div class="card-header"><div class="card-title">Upcoming Events</div><button class="btn btn-outline btn-sm" onclick="showPage('events')">All</button></div><div id="dash-events-list"><div class="loading">Loading...</div></div></div>
+  </div>
+</div>
+
+<!-- AMBASSADORS -->
+<div class="page" id="page-ambassadors">
+  <div style="display:flex;gap:10px;align-items:center;margin-bottom:18px;"><div class="search-bar" style="flex:1;"><span class="si">🔍</span><input type="text" placeholder="Search ambassadors..." oninput="renderAmbassadors(this.value)"></div><button class="btn btn-primary" onclick="openModal('add-ambassador-modal')">+ Add Ambassador</button></div>
+  <div class="grid-3" id="ambassadors-grid"><div class="loading">Loading ambassadors...</div></div>
+</div>
+
+<!-- DONORS -->
+<div class="page" id="page-donors">
+  <div style="display:flex;gap:10px;align-items:center;margin-bottom:18px;"><div class="search-bar" style="flex:1;"><span class="si">🔍</span><input type="text" placeholder="Search donors..." oninput="renderDonors(this.value)"></div><button class="btn btn-gold" onclick="openModal('add-donor-modal')">+ Add Donor</button></div>
+  <div class="grid-3" id="donors-grid"><div class="loading">Loading donors...</div></div>
+</div>
+
+<!-- VOLUNTEERS -->
+<div class="page" id="page-volunteers">
+  <div style="display:flex;gap:10px;align-items:center;margin-bottom:18px;"><div class="search-bar" style="flex:1;"><span class="si">🔍</span><input type="text" placeholder="Search volunteers..." oninput="renderVolunteers(this.value)"></div><button class="btn btn-primary" onclick="openModal('add-volunteer-modal')">+ Add Volunteer</button></div>
+  <div class="grid-3" id="volunteers-grid"><div class="loading">Loading volunteers...</div></div>
+</div>
+
+<!-- PLEDGE CARDS -->
+<div class="page" id="page-pledgecards">
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchPledgeTab('unprocessed',this)">⚠️ Unprocessed (<span id="up-count">0</span>)</button>
+    <button class="tab-btn" onclick="switchPledgeTab('all',this)">All Cards</button>
+    <button class="tab-btn" onclick="switchPledgeTab('new',this)">+ New Card</button>
+  </div>
+  <div id="pledge-tab-unprocessed"><div class="alert alert-warning"><span>⚠️</span><div>Pledge cards collected but not yet processed. Follow up immediately.</div></div><div id="unprocessed-list"><div class="loading">Loading...</div></div></div>
+  <div id="pledge-tab-all" style="display:none;"><div class="card"><div class="table-wrap"><table><thead><tr><th>Donor</th><th>Amount</th><th>Recurring</th><th>Months</th><th>Payment</th><th>Volunteer</th><th>Row</th><th>Status</th><th>Actions</th></tr></thead><tbody id="pledge-cards-table"><tr><td colspan="9" class="loading">Loading...</td></tr></tbody></table></div></div></div>
+  <div id="pledge-tab-new" style="display:none;">
+    <div class="pledge-card-preview"><h4>✦ Donorly Digital Pledge Card</h4><p>Enter donor info exactly as on the physical card. All fields marked * are mandatory.</p></div>
+    <div class="card">
+      <div class="form-section"><div class="form-section-title">👤 Donor Information</div>
+        <div class="form-row"><div class="form-group"><label>First Name *</label><input type="text" id="pc-fname" placeholder="e.g. Ahmad"></div><div class="form-group"><label>Last Name</label><input type="text" id="pc-lname"></div></div>
+        <div class="form-row"><div class="form-group"><label>Email *</label><input type="email" id="pc-email" placeholder="For receipt"></div><div class="form-group"><label>Phone *</label><input type="text" id="pc-phone" placeholder="+1 555 000 0000"></div></div>
+        <div class="form-group"><label>Address</label><input type="text" id="pc-address" placeholder="Street, City, State, ZIP"></div>
+      </div>
+      <div class="form-section"><div class="form-section-title">💰 Pledge Details</div>
+        <div class="form-row-3">
+          <div class="form-group"><label>Amount ($) *</label><input type="number" id="pc-amount" placeholder="100"></div>
+          <div class="form-group"><label>Payment Type</label><select id="pc-recurring"><option value="one-time">One-time</option><option value="monthly">Monthly Recurring</option><option value="weekly">Weekly Recurring</option></select></div>
+          <div class="form-group"><label>Duration (months)</label><input type="number" id="pc-months" value="24"></div>
+        </div>
+        <div class="form-row"><div class="form-group"><label>Donation Type</label><select id="pc-dtype"><option>General</option><option>Zakat</option><option>Sadaqah</option><option>Sadaqah Jariyah</option></select></div>
+        <div class="form-group"><label>Ambassador</label><select id="pc-ambassador"></select></div></div>
+      </div>
+      <div class="form-section"><div class="form-section-title">💳 Payment Method</div>
+        <div class="form-group"><label>Method *</label><select id="pc-method" onchange="togglePaymentFields()"><option value="credit-card">Credit Card (Swipe/Tap)</option><option value="zelle">Zelle</option><option value="paypal">PayPal</option><option value="bank">Bank Transfer / ACH</option><option value="check">Cheque</option><option value="cash">Cash</option><option value="mohid">Mohid Online</option><option value="apple-google">Apple/Google Pay</option></select></div>
+        <div id="cc-fields">
+          <div class="form-row"><div class="form-group"><label>Card Number *</label><input type="text" id="pc-ccnum" placeholder="•••• •••• •••• ••••" maxlength="19"></div><div class="form-group"><label>Expiry *</label><input type="text" id="pc-ccexp" placeholder="MM/YY"></div></div>
+          <div class="form-row"><div class="form-group"><label>Security Code *</label><input type="text" id="pc-cvc" placeholder="•••" maxlength="4"></div><div class="form-group"><label>Cardholder Name</label><input type="text" id="pc-ccname"></div></div>
+        </div>
+        <div id="bank-fields" style="display:none;">
+          <div class="form-row"><div class="form-group"><label>Bank Name</label><input type="text" id="pc-bank"></div><div class="form-group"><label>Routing Number</label><input type="text" id="pc-routing" placeholder="9-digit"></div></div>
+          <div class="form-group"><label>Account Number</label><input type="text" id="pc-acct"></div>
+        </div>
+        <div class="form-group" style="margin-top:6px;"><label style="display:flex;align-items:center;gap:6px;text-transform:none;font-size:12px;"><input type="checkbox" id="pc-corp-match" style="width:auto;"> Corporate Matching Eligible</label></div>
+      </div>
+      <div class="form-section"><div class="form-section-title">👤 Volunteer Info</div>
+        <div class="form-row"><div class="form-group"><label>Collected by Volunteer *</label><select id="pc-volunteer"></select></div><div class="form-group"><label>Row / Area</label><input type="text" id="pc-row" placeholder="e.g. Row 3-4, Area 2"></div></div>
+        <div class="form-group"><label>Notes</label><textarea id="pc-notes" placeholder="Any issues, follow-up needed..."></textarea></div>
+      </div>
+      <button class="btn btn-gold btn-full" onclick="savePledgeCard()">Save Pledge Card 📋</button>
+    </div>
+  </div>
+</div>
+
+<!-- FOLLOW-UPS -->
+<div class="page" id="page-followups">
+  <div class="grid-2">
+    <div><h3 style="font-size:16px;color:var(--emerald);margin-bottom:14px;">Ambassador Follow-up Tracker</h3><div id="followup-list"><div class="loading">Loading...</div></div></div>
+    <div class="card"><div class="card-header"><div class="card-title">4-Week Workflow</div></div>
+      <div class="timeline">
+        <div class="timeline-item"><div class="timeline-dot done"></div><div class="timeline-title">Week 1 — Welcome &amp; Onboard</div><div class="timeline-desc">Send welcome, assign code, share flyers &amp; renderings</div></div>
+        <div class="timeline-item"><div class="timeline-dot active"></div><div class="timeline-title">Week 2 — Resource Check-in</div><div class="timeline-desc">"What resources can I provide? Flyers, renderings, scripts?"</div></div>
+        <div class="timeline-item"><div class="timeline-dot pending"></div><div class="timeline-title">Week 3 — Contact Sharing Offer</div><div class="timeline-desc">"Share your contacts or get warm leads familiar with the project"</div></div>
+        <div class="timeline-item"><div class="timeline-dot pending"></div><div class="timeline-title">Week 4 — Town Hall Coordination</div><div class="timeline-desc">"Coordinate a town hall — our team will help you conduct it"</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EVENTS -->
+<div class="page" id="page-events">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div class="tab-bar" style="margin-bottom:0;"><button class="tab-btn active" onclick="filterEvents('all',this)">All</button><button class="tab-btn" onclick="filterEvents('Town Hall',this)">Town Halls</button><button class="tab-btn" onclick="filterEvents('Benefit Dinner',this)">Dinners</button><button class="tab-btn" onclick="filterEvents('Eid/Jumuah',this)">Eid/Jumu'ah</button><button class="tab-btn" onclick="filterEvents('BBQ',this)">BBQ</button></div>
+    <button class="btn btn-primary" onclick="openModal('add-event-modal')">+ Add Event</button>
+  </div>
+  <div class="grid-3" id="events-grid"><div class="loading">Loading events...</div></div>
+</div>
+
+<!-- TOWN HALLS -->
+<div class="page" id="page-townhalls">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div><h3 style="font-size:16px;color:var(--emerald);">🏛️ Town Halls</h3><p style="font-size:11px;color:var(--text-muted);margin-top:3px;">Coordinate town hall meetings in ambassadors' communities.</p></div>
+    <button class="btn btn-primary" onclick="openModal('add-townhall-modal')">+ Schedule Town Hall</button>
+  </div>
+  <div class="grid-3" id="townhalls-grid"><div class="loading">Loading town halls...</div></div>
+</div>
+
+<!-- MESSAGES -->
+<div class="page" id="page-messages">
+  <div class="grid-2">
+    <div class="card"><div class="card-header"><div class="card-title">Message Templates</div></div><div style="display:flex;flex-direction:column;gap:9px;" id="msg-templates"></div></div>
+    <div class="card"><div class="card-header"><div class="card-title">Send Message</div></div>
+      <div class="form-group"><label>Send To</label><select id="msg-to"></select></div>
+      <div class="form-group"><label>Channel</label><select id="msg-channel"><option>WhatsApp</option><option>Email</option><option>SMS</option></select></div>
+      <div class="form-group"><label>Message</label><textarea id="msg-body" rows="5"></textarea></div>
+      <button class="btn btn-primary btn-full" onclick="sendMessage()">Send 📤</button>
+    </div>
+  </div>
+</div>
+
+<!-- RECURRING -->
+<div class="page" id="page-recurring">
+  <div class="grid-4" style="margin-bottom:18px;">
+    <div class="stat-card"><div class="stat-icon blue">🔄</div><div class="stat-value" id="rec-count">0</div><div class="stat-label">Recurring Donors</div></div>
+    <div class="stat-card"><div class="stat-icon emerald">📅</div><div class="stat-value" id="rec-mrr">$0</div><div class="stat-label">Monthly (MRR)</div></div>
+    <div class="stat-card"><div class="stat-icon gold">📆</div><div class="stat-value" id="rec-arr">$0</div><div class="stat-label">Total Committed</div></div>
+    <div class="stat-card"><div class="stat-icon purple">⏳</div><div class="stat-value" id="rec-avg">0mo</div><div class="stat-label">Avg Duration</div></div>
+  </div>
+  <div class="card"><div class="card-header"><div class="card-title">Recurring Pledge Schedule</div></div>
+    <div class="table-wrap"><table><thead><tr><th>Donor</th><th>Monthly</th><th>Duration</th><th>Total Commitment</th><th>Payments Made</th><th>Remaining</th><th>Status</th></tr></thead><tbody id="recurring-table"><tr><td colspan="7" class="loading">Loading...</td></tr></tbody></table></div>
+  </div>
+</div>
+
+<!-- CORPORATE MATCH -->
+<div class="page" id="page-corporate">
+  <div class="alert alert-info"><span>ℹ️</span><div>Corporate matching can double donations. Common platforms: <strong>Benevity, YourCause, Double the Donation</strong>.</div></div>
+  <div class="grid-2" style="margin-bottom:18px;">
+    <div class="stat-card"><div class="stat-icon blue">🏢</div><div class="stat-value" id="corp-count">0</div><div class="stat-label">Corp Match Eligible</div></div>
+    <div class="stat-card"><div class="stat-icon gold">💰</div><div class="stat-value" id="corp-total">$0</div><div class="stat-label">Potential Match Value</div></div>
+  </div>
+  <div class="card"><div class="card-header"><div class="card-title">Corporate Match Donors</div><button class="btn btn-primary btn-sm" onclick="toast('Reminders sent! 📧','info')">Send All Reminders</button></div>
+    <div class="table-wrap"><table><thead><tr><th>Donor</th><th>Pledge</th><th>Employer</th><th>Platform</th><th>Match Status</th><th>Actions</th></tr></thead><tbody id="corp-table"><tr><td colspan="6" class="loading">Loading...</td></tr></tbody></table></div>
+  </div>
+</div>
+
+<!-- TAX RECEIPTS -->
+<div class="page" id="page-taxreceipts">
+  <div class="alert alert-warning"><span>⚠️</span><div><strong>Year-end reminder:</strong> Donations must be made by December 31 to be tax-deductible.</div></div>
+  <div class="grid-2" style="margin-bottom:18px;">
+    <div class="stat-card"><div class="stat-icon emerald">🧾</div><div class="stat-value" id="receipt-sent">0</div><div class="stat-label">Receipts Sent</div></div>
+    <div class="stat-card"><div class="stat-icon red">📬</div><div class="stat-value" id="receipt-pending">0</div><div class="stat-label">Pending</div></div>
+  </div>
+  <div class="card"><div class="card-header"><div class="card-title">Donor Tax Receipts</div>
+    <div style="display:flex;gap:7px;">
+      <button class="btn btn-outline btn-sm" onclick="toast('Year-end reminder sent! 📧','info')">📧 Year-End Reminder</button>
+      <button class="btn btn-primary btn-sm" onclick="toast('All receipts generated! 🧾')">Generate All</button>
+    </div>
+  </div>
+    <div class="table-wrap"><table><thead><tr><th>Donor</th><th>Total Donated</th><th>Tax Year</th><th>Email</th><th>Receipt</th><th>Actions</th></tr></thead><tbody id="tax-table"><tr><td colspan="6" class="loading">Loading...</td></tr></tbody></table></div>
+  </div>
+</div>
+
+<!-- CALL LOG -->
+<div class="page" id="page-calllog">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div><h3 style="font-size:16px;color:var(--emerald);">📞 Call Log</h3><p style="font-size:11px;color:var(--text-muted);margin-top:3px;">Track every call attempt on donors whose pledge cards couldn't be processed.</p></div>
+    <button class="btn btn-primary btn-sm" onclick="openModal('add-calllog-modal')">+ Log Call</button>
+  </div>
+  <div class="card"><div class="table-wrap"><table><thead><tr><th>Donor</th><th>Phone</th><th>Pledge Card</th><th>Attempts</th><th>Last Attempt</th><th>Outcome</th><th>Next Action</th><th>Actions</th></tr></thead><tbody id="calllog-table"><tr><td colspan="8" class="loading">Loading...</td></tr></tbody></table></div></div>
+</div>
+
+<!-- CASH & DONATION BOXES -->
+<div class="page" id="page-cashboxes">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div><h3 style="font-size:16px;color:var(--emerald);">💵 Cash &amp; Donation Box Tracker</h3></div>
+    <button class="btn btn-primary btn-sm" onclick="openModal('add-cashbox-modal')">+ Log Collection</button>
+  </div>
+  <div class="grid-4" style="margin-bottom:18px;">
+    <div class="stat-card"><div class="stat-icon emerald">💵</div><div class="stat-value" id="cash-total">$0</div><div class="stat-label">Total Cash Collected</div></div>
+    <div class="stat-card"><div class="stat-icon gold">📦</div><div class="stat-value" id="cash-boxes">0</div><div class="stat-label">Boxes Deployed</div></div>
+    <div class="stat-card"><div class="stat-icon blue">✅</div><div class="stat-value" id="cash-counted">0</div><div class="stat-label">Boxes Counted</div></div>
+    <div class="stat-card"><div class="stat-icon red">⏳</div><div class="stat-value" id="cash-pending-boxes">0</div><div class="stat-label">Pending Count</div></div>
+  </div>
+  <div class="card"><div class="table-wrap"><table><thead><tr><th>Box #</th><th>Area / Row</th><th>Volunteer</th><th>Amount</th><th>Status</th><th>Notes</th><th>Actions</th></tr></thead><tbody id="cashbox-table"><tr><td colspan="7" class="loading">Loading...</td></tr></tbody></table></div></div>
+</div>
+
+<!-- QR BUSINESS CARD -->
+<div class="page" id="page-qrcard">
+  <div style="margin-bottom:16px;"><h3 style="font-size:16px;color:var(--emerald);">🪪 QR Business Card Generator</h3></div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header"><div class="card-title">Card Details</div></div>
+      <div class="form-group"><label>Organisation Name</label><input type="text" id="qr-org" value="Donorly — Jamia Masjid Chicago"></div>
+      <div class="form-group"><label>Tagline</label><input type="text" id="qr-tagline" value="Build your legacy in Jannah 🕌"></div>
+      <div class="form-group"><label>Donation Link</label><input type="text" id="qr-link" value="https://us.mohid.co/il/chicago/jamia/masjid/online/donation"></div>
+      <div class="form-group"><label>Contact</label><input type="text" id="qr-contact" value="pay2jamia@gmail.com | 773-507-3025"></div>
+      <div class="form-group"><label>Goal Message</label><input type="text" id="qr-goal" value="Get pledges from 5-10 people in your circle!"></div>
+      <button class="btn btn-primary btn-full" onclick="generateQRCard()">Generate Card Preview 🪪</button>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
+      <div id="qr-card-preview" style="width:320px;background:linear-gradient(135deg,#073829,#0a4f3f);border-radius:14px;padding:22px;color:white;text-align:center;">
+        <div style="font-size:28px;margin-bottom:6px;">✦</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:700;margin-bottom:4px;" id="qr-prev-org">Donorly — Jamia Masjid Chicago</div>
+        <div style="font-size:11px;opacity:.8;margin-bottom:14px;" id="qr-prev-tagline">Build your legacy in Jannah 🕌</div>
+        <div style="background:white;border-radius:10px;width:100px;height:100px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#0a4f3f;font-weight:700;">QR CODE<br>Here</div>
+        <div style="font-size:10px;opacity:.75;margin-bottom:6px;" id="qr-prev-contact">pay2jamia@gmail.com | 773-507-3025</div>
+        <div style="font-size:10px;color:#c9a052;font-weight:600;" id="qr-prev-goal">Get pledges from 5-10 people in your circle!</div>
+      </div>
+      <button class="btn btn-gold" style="margin-top:16px;width:320px;" onclick="toast('Business cards sent to printer! 🖨️','info')">🖨️ Print 500 Cards</button>
+    </div>
+  </div>
+</div>
+
+<!-- MPM PRO GUIDE -->
+<div class="page" id="page-mpmguide">
+  <div style="margin-bottom:16px;"><h3 style="font-size:16px;color:var(--emerald);">📱 MPM Pro App — Volunteer Guide</h3></div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header"><div class="card-title">📱 Setup Instructions</div></div>
+      <div class="timeline">
+        <div class="timeline-item"><div class="timeline-dot done"></div><div class="timeline-title">Step 1 — Download MPM Pro (Android Only)</div><div class="timeline-desc">Go to Play Store → Search "MPM Pro" → Install</div></div>
+        <div class="timeline-item"><div class="timeline-dot done"></div><div class="timeline-title">Step 2 — Enter App Key</div><div class="timeline-desc">Key: <strong style="color:var(--emerald);background:var(--cream);padding:2px 8px;border-radius:5px;">YCWWGE4B8B</strong></div></div>
+        <div class="timeline-item"><div class="timeline-dot done"></div><div class="timeline-title">Step 3 — Enable NFC</div><div class="timeline-desc">Enable NFC when the app asks.</div></div>
+        <div class="timeline-item"><div class="timeline-dot done"></div><div class="timeline-title">Step 4 — Deny Location</div><div class="timeline-desc">Select DENY when asked for location.</div></div>
+        <div class="timeline-item"><div class="timeline-dot active"></div><div class="timeline-title">Step 5 — Run a Test First!</div><div class="timeline-desc">Run a demo test using your own card BEFORE the event.</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">📋 Kiosk / Swipe Device Instructions</div></div>
+      <div class="timeline">
+        <div class="timeline-item"><div class="timeline-dot done"></div><div class="timeline-title">Step 1 — Turn on device</div><div class="timeline-desc">Connect to WiFi or volunteer's mobile hotspot.</div></div>
+        <div class="timeline-item"><div class="timeline-dot done"></div><div class="timeline-title">Step 2 — Key already entered</div><div class="timeline-desc">If it asks for key, call Ikram bhai or Ahsan bhai immediately.</div></div>
+        <div class="timeline-item"><div class="timeline-dot done"></div><div class="timeline-title">Step 3 — Select DONATION</div><div class="timeline-desc">Select "Masjid Construction" as the donation category.</div></div>
+        <div class="timeline-item"><div class="timeline-dot done"></div><div class="timeline-title">Step 4 — Confirm with donor</div><div class="timeline-desc">Double confirm: amount, monthly or one-time, payment schedule.</div></div>
+        <div class="timeline-item"><div class="timeline-dot active"></div><div class="timeline-title">Step 5 — Capture email &amp; phone</div><div class="timeline-desc">Always capture donor's email and phone for receipt and follow-up.</div></div>
+        <div class="timeline-item"><div class="timeline-dot pending"></div><div class="timeline-title">Step 6 — Tap or Insert Card</div><div class="timeline-desc">Device supports both tap (NFC) and physical card insert.</div></div>
+      </div>
+      <div class="alert alert-info" style="margin-top:12px;"><span>ℹ️</span><div>Zelle &amp; PayPal → <strong>pay2jamia@gmail.com</strong><br>Online → <strong>us.mohid.co/il/chicago/jamia</strong></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- RESOURCES -->
+<div class="page" id="page-resources">
+  <div style="margin-bottom:18px;"><h3 style="font-size:16px;color:var(--emerald);margin-bottom:3px;">Resource Library</h3><p style="font-size:12px;color:var(--text-muted);">Share with ambassadors and volunteers.</p></div>
+  <div class="grid-3">
+    <div class="resource-card"><div class="resource-icon">📄</div><div style="font-size:13px;font-weight:700;color:var(--emerald);">Flyer (English)</div><div style="font-size:11px;color:var(--text-muted);margin-top:3px;">A4 printable with QR</div><button class="btn btn-outline btn-sm" style="margin-top:10px;width:100%" onclick="toast('Flyer downloaded! 📄','info')">Download</button></div>
+    <div class="resource-card"><div class="resource-icon">🕌</div><div style="font-size:13px;font-weight:700;color:var(--emerald);">Flyer (Urdu)</div><div style="font-size:11px;color:var(--text-muted);margin-top:3px;">Urdu/Arabic version</div><button class="btn btn-outline btn-sm" style="margin-top:10px;width:100%" onclick="toast('Urdu flyer ready!','info')">Download</button></div>
+    <div class="resource-card"><div class="resource-icon">🖼️</div><div style="font-size:13px;font-weight:700;color:var(--emerald);">Centre Renderings</div><div style="font-size:11px;color:var(--text-muted);margin-top:3px;">High-res madrasa photos</div><button class="btn btn-outline btn-sm" style="margin-top:10px;width:100%" onclick="toast('Renderings ready!','info')">Download</button></div>
+    <div class="resource-card"><div class="resource-icon">📊</div><div style="font-size:13px;font-weight:700;color:var(--emerald);">Pitch Deck</div><div style="font-size:11px;color:var(--text-muted);margin-top:3px;">10-slide mission deck</div><button class="btn btn-outline btn-sm" style="margin-top:10px;width:100%" onclick="toast('Pitch deck ready!','info')">Download</button></div>
+    <div class="resource-card"><div class="resource-icon">💬</div><div style="font-size:13px;font-weight:700;color:var(--emerald);">WhatsApp Scripts</div><div style="font-size:11px;color:var(--text-muted);margin-top:3px;">20+ ready-to-send messages</div><button class="btn btn-outline btn-sm" style="margin-top:10px;width:100%" onclick="toast('Scripts copied! 💬','info')">Copy</button></div>
+    <div class="resource-card"><div class="resource-icon">📋</div><div style="font-size:13px;font-weight:700;color:var(--emerald);">Pledge Card Template</div><div style="font-size:11px;color:var(--text-muted);margin-top:3px;">Printable physical cards</div><button class="btn btn-outline btn-sm" style="margin-top:10px;width:100%" onclick="toast('Pledge card PDF ready!','info')">Print</button></div>
+  </div>
+</div>
+
+    </div>
+  </div>
+</div>
+
+<!-- AMBASSADOR PORTAL -->
+<div id="amb-portal" style="display:none;">
+  <div class="amb-topbar"><h2>✦ Donorly — Ambassador Portal</h2><div style="display:flex;align-items:center;gap:12px;"><span id="amb-portal-name" style="color:var(--gold-light);font-weight:600;"></span><button class="btn btn-outline btn-sm" style="color:white;border-color:rgba(255,255,255,.3);" onclick="logout()">Sign Out</button></div></div>
+  <div style="padding:26px;max-width:940px;margin:0 auto;">
+    <div class="welcome-banner"><h2 id="amb-welcome-title">As-salamu alaykum! 🤲</h2><p id="amb-welcome-msg">JazakAllah khair for joining Donorly as an Ambassador.</p><p style="margin-top:9px;"><span class="gold-text" id="amb-portal-code">Your code: </span></p></div>
+    <div class="grid-3" style="margin-bottom:18px;">
+      <div class="stat-card"><div class="stat-icon gold">💰</div><div class="stat-value" id="amb-my-pledged">$0</div><div class="stat-label">My Pledges Raised</div></div>
+      <div class="stat-card"><div class="stat-icon emerald">👥</div><div class="stat-value" id="amb-my-donors">0</div><div class="stat-label">Donors I've Brought</div></div>
+      <div class="stat-card"><div class="stat-icon blue">🎯</div><div class="stat-value" id="amb-my-goal">$0</div><div class="stat-label">My Goal</div></div>
+    </div>
+    <div class="card" style="margin-bottom:18px;"><div class="card-header"><div class="card-title">Pledge Progress</div></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span style="font-size:11px;color:var(--text-muted);" id="amb-progress-label">$0 of $0</span><span style="font-weight:700;color:var(--gold);" id="amb-progress-pct">0%</span></div>
+      <div class="progress-bar" style="height:10px;"><div class="progress-fill" id="amb-progress-bar" style="width:0%"></div></div>
+    </div>
+    <div class="card" style="margin-bottom:18px;"><div class="card-header"><div class="card-title">Your Journey</div></div>
+      <div class="followup-week done"><div class="week-num done">✓</div><div><div style="font-weight:700;font-size:13px;">Week 1 — Welcomed ✅</div><div style="font-size:11px;color:var(--text-muted);">Onboarded, code assigned, resources sent.</div></div></div>
+      <div class="followup-week active"><div class="week-num active">2</div><div><div style="font-weight:700;font-size:13px;">Week 2 — Resource Check-in 🔔</div><div style="font-size:11px;color:var(--text-muted);">What resources can we provide to help you meet your goal?</div><div style="display:flex;gap:7px;margin-top:7px;"><button class="btn btn-primary btn-sm" onclick="toast('Requesting flyers...','info')">📄 Flyers</button><button class="btn btn-outline btn-sm" onclick="toast('Requesting renderings...','info')">🖼️ Renderings</button></div></div></div>
+      <div class="followup-week pending"><div class="week-num pending">3</div><div><div style="font-weight:700;font-size:12px;color:var(--text-muted);">Week 3 — Contact Sharing (Next week)</div></div></div>
+      <div class="followup-week pending"><div class="week-num pending">4</div><div><div style="font-weight:700;font-size:12px;color:var(--text-muted);">Week 4 — Town Hall (In 2 weeks)</div></div></div>
+    </div>
+    <div class="card" style="margin-bottom:18px;"><div class="card-header"><div class="card-title">📁 Resources</div></div>
+      <div class="grid-3"><div class="resource-card" onclick="toast('Flyer downloaded!','info')"><div class="resource-icon">📄</div><div style="font-size:12px;font-weight:700;color:var(--emerald);">Campaign Flyer</div></div><div class="resource-card" onclick="toast('Renderings downloaded!','info')"><div class="resource-icon">🖼️</div><div style="font-size:12px;font-weight:700;color:var(--emerald);">Centre Renderings</div></div><div class="resource-card" onclick="toast('Scripts copied! 💬','info')"><div class="resource-icon">💬</div><div style="font-size:12px;font-weight:700;color:var(--emerald);">WhatsApp Scripts</div></div></div>
+    </div>
+    <div class="card" style="margin-bottom:18px;"><div class="card-header"><div class="card-title">🤝 My Ambassadors</div><button class="btn btn-outline btn-sm" onclick="openModal('add-sub-ambassador-modal')">+ Add Sub-Ambassador</button></div>
+      <p style="font-size:11px;color:var(--text-muted);margin-bottom:10px;">Ambassadors you've brought on, and everyone they've brought on too.</p>
+      <div id="amb-downline-list"><div class="loading">Loading...</div></div>
+      <hr class="divider">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <div style="font-size:10px;color:var(--text-muted);max-width:520px;">Stepping away? Hand your entire account — donors, pledges, and ambassador network — over to someone else. You'll be signed out and locked out of this account afterward.</div>
+        <button class="btn btn-danger btn-sm" style="flex-shrink:0;" onclick="openModal('handover-modal')">Hand Over My Account</button>
+      </div>
+    </div>
+    <div class="card"><div class="card-header"><div class="card-title">My Donors</div><button class="btn btn-gold btn-sm" onclick="openModal('add-donor-modal')">+ Add Donor</button></div>
+      <div class="table-wrap"><table><thead><tr><th>Name</th><th>Pledge</th><th>Recurring</th><th>Type</th><th>Status</th></tr></thead><tbody id="amb-donors-table"><tr><td colspan="5" class="loading">Loading...</td></tr></tbody></table></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="add-sub-ambassador-modal"><div class="modal"><div class="modal-header"><h3>Add Sub-Ambassador</h3><button class="modal-close" onclick="closeModal('add-sub-ambassador-modal')">✕</button></div><div class="modal-body">
+<p style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">They'll show up under you in your ambassador network, and you'll be able to see their donors and pledges too.</p>
+<div class="form-row"><div class="form-group"><label>First Name *</label><input type="text" id="suba-fname"></div><div class="form-group"><label>Last Name *</label><input type="text" id="suba-lname"></div></div>
+<div class="form-row"><div class="form-group"><label>Email</label><input type="email" id="suba-email"></div><div class="form-group"><label>Phone</label><input type="text" id="suba-phone"></div></div>
+<div class="form-row"><div class="form-group"><label>City</label><input type="text" id="suba-city"></div><div class="form-group"><label>Pledge Goal ($)</label><input type="number" id="suba-goal" placeholder="10000"></div></div>
+<div class="form-group"><label>Ambassador Code</label><input type="text" id="suba-code" placeholder="e.g. AHMED2026"></div>
+</div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('add-sub-ambassador-modal')">Cancel</button><button class="btn btn-primary" onclick="addSubAmbassador()">Add 🤝</button></div></div></div>
+
+<div class="modal-overlay" id="handover-modal"><div class="modal"><div class="modal-header"><h3>Hand Over My Account</h3><button class="modal-close" onclick="closeModal('handover-modal')">✕</button></div><div class="modal-body">
+<div class="alert alert-warning"><span>⚠️</span><div>This transfers <strong>everything</strong> — your donors, pledges, and your spot in the ambassador network — to the person you choose below. Your own account will be <strong>locked out</strong> immediately after. This cannot be undone.</div></div>
+<div class="form-group"><label>Hand over to (from your network) *</label><select id="handover-target"></select></div>
+</div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('handover-modal')">Cancel</button><button class="btn btn-danger" onclick="confirmHandover()">Hand Over Everything</button></div></div></div>
+<!-- MODALS -->
+<div class="modal-overlay" id="add-ambassador-modal"><div class="modal"><div class="modal-header"><h3>Add Ambassador</h3><button class="modal-close" onclick="closeModal('add-ambassador-modal')">✕</button></div><div class="modal-body"><div class="form-row"><div class="form-group"><label>First Name *</label><input type="text" id="amb-fname"></div><div class="form-group"><label>Last Name *</label><input type="text" id="amb-lname"></div></div><div class="form-row"><div class="form-group"><label>Email</label><input type="email" id="amb-email-new"></div><div class="form-group"><label>Phone / WhatsApp</label><input type="text" id="amb-phone"></div></div><div class="form-row"><div class="form-group"><label>City</label><input type="text" id="amb-city"></div><div class="form-group"><label>Country</label><input type="text" id="amb-country"></div></div><div class="form-row"><div class="form-group"><label>Pledge Goal ($)</label><input type="number" id="amb-goal-new" placeholder="10000"></div><div class="form-group"><label>Ambassador Code</label><input type="text" id="amb-code-new" placeholder="e.g. ZAID2026"></div></div><div class="form-group"><label>Note</label><textarea id="amb-note" placeholder="Why they're joining..."></textarea></div></div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('add-ambassador-modal')">Cancel</button><button class="btn btn-primary" onclick="addAmbassador()">Add &amp; Welcome 🤝</button></div></div></div>
+
+<div class="modal-overlay" id="add-donor-modal"><div class="modal modal-wide"><div class="modal-header"><h3>Add Donor &amp; Pledge</h3><button class="modal-close" onclick="closeModal('add-donor-modal')">✕</button></div><div class="modal-body"><div class="form-row"><div class="form-group"><label>Donor Name *</label><input type="text" id="donor-name"></div><div class="form-group"><label>Phone</label><input type="text" id="donor-phone"></div></div><div class="form-row"><div class="form-group"><label>Email</label><input type="email" id="donor-email"></div><div class="form-group"><label>City</label><input type="text" id="donor-city"></div></div><div class="form-row"><div class="form-group"><label>Pledge Amount ($) *</label><input type="number" id="donor-amount"></div><div class="form-group"><label>Donation Type</label><select id="donor-type"><option>General</option><option>Zakat</option><option>Sadaqah</option><option>Sadaqah Jariyah</option></select></div></div><div class="form-row"><div class="form-group"><label>Recurring?</label><select id="donor-recurring"><option value="one-time">One-time</option><option value="monthly">Monthly</option><option value="weekly">Weekly</option></select></div><div class="form-group"><label>Duration (months)</label><input type="number" id="donor-months" value="24"></div></div><div class="form-row"><div class="form-group"><label>Payment Method</label><select id="donor-method"><option>Credit Card</option><option>Zelle</option><option>PayPal</option><option>Bank Transfer</option><option>Cheque</option><option>Cash</option><option>Mohid Online</option><option>Apple/Google Pay</option></select></div><div class="form-group"><label>Ambassador</label><select id="donor-ambassador"></select></div></div><div class="form-group"><label style="display:flex;align-items:center;gap:6px;text-transform:none;font-size:12px;"><input type="checkbox" id="donor-corp" style="width:auto;" onchange="document.getElementById('donor-corp-fields').style.display=this.checked?'block':'none'"> Corporate Matching Eligible</label></div><div class="form-group" id="donor-corp-fields" style="display:none;"><label>Employer / Matching Platform</label><input type="text" id="donor-employer" placeholder="e.g. Google / Benevity"></div><div class="form-group"><label>Notes</label><textarea id="donor-notes"></textarea></div></div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('add-donor-modal')">Cancel</button><button class="btn btn-gold" onclick="addDonor()">Add Donor 💛</button></div></div></div>
+
+<div class="modal-overlay" id="add-volunteer-modal"><div class="modal"><div class="modal-header"><h3>Add Volunteer</h3><button class="modal-close" onclick="closeModal('add-volunteer-modal')">✕</button></div><div class="modal-body"><div class="form-row"><div class="form-group"><label>Name *</label><input type="text" id="vol-name"></div><div class="form-group"><label>Phone *</label><input type="text" id="vol-phone"></div></div><div class="form-group"><label>Email</label><input type="email" id="vol-email"></div><div class="form-row"><div class="form-group"><label>Role</label><select id="vol-role"><option>Pledge Collector (Row)</option><option>Kiosk / Swipe Terminal</option><option>Runner</option><option>Ambassador Program</option><option>Computer / Mohid Entry</option><option>General</option></select></div><div class="form-group"><label>Assigned Area / Row</label><input type="text" id="vol-area" placeholder="e.g. Row 3-4, Area 2"></div></div><div class="form-group"><label>Notes</label><textarea id="vol-notes" placeholder="Device type, skills, availability..."></textarea></div></div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('add-volunteer-modal')">Cancel</button><button class="btn btn-primary" onclick="addVolunteer()">Add Volunteer 👥</button></div></div></div>
+
+<div class="modal-overlay" id="add-event-modal"><div class="modal"><div class="modal-header"><h3>Add Event</h3><button class="modal-close" onclick="closeModal('add-event-modal')">✕</button></div><div class="modal-body"><div class="form-group"><label>Title *</label><input type="text" id="ev-title" placeholder="e.g. Benefit Dinner — Chicago"></div><div class="form-group"><label>Event Type</label><select id="ev-type"><option>Town Hall</option><option>Benefit Dinner</option><option>Eid/Jumuah</option><option>BBQ</option><option>Khatam-e-Quran</option><option>Other</option></select></div><div class="form-row"><div class="form-group"><label>Date *</label><input type="date" id="ev-date"></div><div class="form-group"><label>Time</label><input type="time" id="ev-time"></div></div><div class="form-group"><label>Venue</label><input type="text" id="ev-venue" placeholder="Masjid name or Zoom link"></div><div class="form-row"><div class="form-group"><label>Host Ambassador</label><select id="ev-ambassador"></select></div><div class="form-group"><label>Expected Attendance</label><input type="number" id="ev-attendance" placeholder="30"></div></div><div class="form-group"><label>Pledge Target ($)</label><input type="number" id="ev-target" placeholder="10000"></div><div class="form-group"><label>Notes / Agenda</label><textarea id="ev-notes"></textarea></div></div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('add-event-modal')">Cancel</button><button class="btn btn-primary" onclick="addEvent()">Schedule Event 🎙️</button></div></div></div>
+
+<div class="modal-overlay" id="add-townhall-modal"><div class="modal"><div class="modal-header"><h3>Schedule Town Hall</h3><button class="modal-close" onclick="closeModal('add-townhall-modal')">✕</button></div><div class="modal-body">
+<div class="form-row"><div class="form-group"><label>Responsible Person *</label><input type="text" id="th-responsible-name" placeholder="Who's organizing this"></div><div class="form-group"><label>Their Phone</label><input type="text" id="th-responsible-phone" placeholder="+1 555 000 0000"></div></div>
+<div class="form-group"><label>Venue</label><input type="text" id="th-venue" placeholder="e.g. Community Hall"></div>
+<div class="form-group"><label>Address</label><input type="text" id="th-address" placeholder="Street, City, State, ZIP" autocomplete="off">
+  <!-- Google Places Autocomplete hook point: once a Maps API key is added,
+       initialize google.maps.places.Autocomplete on #th-address here and
+       populate #th-place-id / #th-lat / #th-lng from the selected place. -->
+</div>
+<input type="hidden" id="th-place-id"><input type="hidden" id="th-lat"><input type="hidden" id="th-lng">
+<div class="form-row-3"><div class="form-group"><label>Date *</label><input type="date" id="th-date"></div><div class="form-group"><label>Time</label><input type="time" id="th-time"></div><div class="form-group"><label>Duration (min)</label><input type="number" id="th-duration" value="60"></div></div>
+<div class="form-row"><div class="form-group"><label>Host Ambassador</label><select id="th-ambassador"></select></div><div class="form-group"><label>Expected RSVPs</label><input type="number" id="th-rsvp" placeholder="20"></div></div>
+</div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('add-townhall-modal')">Cancel</button><button class="btn btn-primary" onclick="addTownHall()">Schedule Town Hall 🏛️</button></div></div></div>
+
+<div class="modal-overlay" id="add-calllog-modal"><div class="modal"><div class="modal-header"><h3>Log Call Attempt</h3><button class="modal-close" onclick="closeModal('add-calllog-modal')">✕</button></div><div class="modal-body"><div class="form-group"><label>Pledge Card / Donor</label><select id="cl-card"></select></div><div class="form-row"><div class="form-group"><label>Call Date &amp; Time</label><input type="datetime-local" id="cl-datetime"></div><div class="form-group"><label>Outcome</label><select id="cl-outcome"><option>No Answer</option><option>Call Disconnected</option><option>Wrong Number</option><option>Reached — Will Pay</option><option>Reached — Declined</option><option>Left Voicemail</option><option>WhatsApp Sent</option></select></div></div><div class="form-group"><label>Called By</label><input type="text" id="cl-caller" placeholder="e.g. Ahsan bhai"></div><div class="form-group"><label>Notes</label><textarea id="cl-notes" placeholder="What was discussed..."></textarea></div></div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('add-calllog-modal')">Cancel</button><button class="btn btn-primary" onclick="saveCallLog()">Save Call Log 📞</button></div></div></div>
+
+<div class="modal-overlay" id="add-cashbox-modal"><div class="modal"><div class="modal-header"><h3>Log Cash / Donation Box</h3><button class="modal-close" onclick="closeModal('add-cashbox-modal')">✕</button></div><div class="modal-body"><div class="form-row"><div class="form-group"><label>Box Number</label><input type="text" id="cb-num" placeholder="e.g. Box 1"></div><div class="form-group"><label>Area / Row</label><input type="text" id="cb-area" placeholder="e.g. Row 5-8, Inside"></div></div><div class="form-row"><div class="form-group"><label>Volunteer Responsible</label><select id="cb-volunteer"></select></div><div class="form-group"><label>Amount Collected ($)</label><input type="number" id="cb-amount" placeholder="0"></div></div><div class="form-group"><label>Notes</label><textarea id="cb-notes" placeholder="Any notes about this box..."></textarea></div></div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('add-cashbox-modal')">Cancel</button><button class="btn btn-primary" onclick="saveCashBox()">Save 💵</button></div></div></div>
+
+<div class="modal-overlay" id="amb-detail-modal"><div class="modal modal-wide"><div class="modal-header"><h3 id="amb-detail-name">Ambassador</h3><button class="modal-close" onclick="closeModal('amb-detail-modal')">✕</button></div><div class="modal-body" id="amb-detail-body"></div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('amb-detail-modal')">Close</button><button class="btn btn-primary" onclick="closeModal('amb-detail-modal');showPage('messages')">Send Message 💬</button></div></div></div>
+
+<div id="toast-container"></div>
+
+<script>
+// ── API CONFIG ──
+const API_BASE = 'https://donorly-backend-production.up.railway.app/api';
+
+// ── COLORS ──
+const COLORS=['#0a4f3f','#a87f2f','#2176ae','#8e44ad','#c0392b','#16a085','#d35400'];
+
+// ── STATE ──
+let currentUser = null;
+let currentRole = null;
+let authToken = null; // kept in memory only — never persisted to localStorage
+let currentAmbassadorId = null;
+let cachedData = {
+  ambassadors: [],
+  donors: [],
+  volunteers: [],
+  pledgeCards: [],
+  events: [],
+  callLogs: [],
+  donationBoxes: [],
+  townHalls: []
+};
+
+// ── API HELPERS ──
+function authHeaders(extra = {}) {
+  const headers = { ...extra };
+  if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
+  return headers;
+}
+
+function handleAuthFailure(status) {
+  if (status === 401) {
+    toast('Session expired — please sign in again', 'error');
+    logout();
+  }
+}
+
+async function apiGet(endpoint) {
+  try {
+    const res = await fetch(API_BASE + endpoint, { headers: authHeaders() });
+    if (res.status === 401) { handleAuthFailure(401); return []; }
+    if (!res.ok) throw new Error('API error: ' + res.status);
+    return await res.json();
+  } catch (e) {
+    console.error('GET ' + endpoint + ' failed:', e);
+    toast('Connection error — check if backend is running', 'error');
+    return [];
+  }
+}
+
+async function apiPost(endpoint, body) {
+  try {
+    const res = await fetch(API_BASE + endpoint, {
+      method: 'POST',
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(body)
+    });
+    if (res.status === 401) { handleAuthFailure(401); return null; }
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      toast((data && data.error) ? data.error : 'Save failed — check backend connection', 'error');
+      return null;
+    }
+    return data;
+  } catch (e) {
+    console.error('POST ' + endpoint + ' failed:', e);
+    toast('Save failed — check backend connection', 'error');
+    return null;
+  }
+}
+
+async function apiPut(endpoint, body) {
+  try {
+    const res = await fetch(API_BASE + endpoint, {
+      method: 'PUT',
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(body)
+    });
+    if (res.status === 401) { handleAuthFailure(401); return null; }
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      toast((data && data.error) ? data.error : 'Update failed', 'error');
+      return null;
+    }
+    return data;
+  } catch (e) {
+    console.error('PUT ' + endpoint + ' failed:', e);
+    toast('Update failed', 'error');
+    return null;
+  }
+}
+
+async function apiDelete(endpoint) {
+  try {
+    const res = await fetch(API_BASE + endpoint, { method: 'DELETE', headers: authHeaders() });
+    if (res.status === 401) { handleAuthFailure(401); return false; }
+    if (!res.ok) throw new Error('API error: ' + res.status);
+    return true;
+  } catch (e) {
+    console.error('DELETE ' + endpoint + ' failed:', e);
+    toast('Delete failed', 'error');
+    return false;
+  }
+}
+
+// ── AUTH ──
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t, i) => t.classList.toggle('active', (i===0&&tab==='admin')||(i===1&&tab==='ambassador')));
+  document.getElementById('admin-login-form').style.display = tab==='admin' ? 'block' : 'none';
+  document.getElementById('amb-login-form').style.display = tab==='ambassador' ? 'block' : 'none';
+}
+
+async function loginAdmin() {
+  const email = document.getElementById('admin-email').value.trim();
+  const password = document.getElementById('admin-pass').value;
+  if (!email || !password) { toast('Enter email and password', 'error'); return; }
+
+  let data;
+  try {
+    const res = await fetch(API_BASE + '/auth/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    data = await res.json().catch(() => null);
+    if (!res.ok) { toast((data && data.error) ? data.error : 'Login failed', 'error'); return; }
+  } catch (e) {
+    toast('Connection error — check if backend is running', 'error');
+    return;
+  }
+
+  authToken = data.token;
+  currentUser = { name: data.name, role: 'Admin' };
+  currentRole = 'admin';
+  currentAmbassadorId = null;
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('sidebar-name').textContent = data.name || 'Admin';
+  await loadAllData();
+  toast('Welcome back, ' + (data.name || 'Admin') + '! 🤲', 'info');
+}
+
+async function loginAmbassador() {
+  const email = document.getElementById('amb-email').value.trim();
+  const password = document.getElementById('amb-pass').value;
+  if (!email || !password) { toast('Enter email and password', 'error'); return; }
+
+  let data;
+  try {
+    const res = await fetch(API_BASE + '/auth/ambassador/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    data = await res.json().catch(() => null);
+    if (!res.ok) {
+      // 409 = already logged in elsewhere (single-session enforcement)
+      toast((data && data.error) ? data.error : 'Login failed', 'error');
+      return;
+    }
+  } catch (e) {
+    toast('Connection error — check if backend is running', 'error');
+    return;
+  }
+
+  authToken = data.token;
+  currentRole = 'ambassador';
+  currentAmbassadorId = data.ambassadorId || null;
+  currentUser = { name: data.name, code: data.ambassadorCode };
+
+  await loadAllData();
+  const amb = cachedData.ambassadors.find(a => a.id === currentAmbassadorId) || {};
+
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('amb-portal').style.display = 'block';
+  document.getElementById('amb-portal-name').textContent = data.name;
+  document.getElementById('amb-portal-code').textContent = 'Your code: ' + (data.ambassadorCode || amb.code || '—');
+  document.getElementById('amb-welcome-title').textContent = 'As-salamu alaykum, ' + data.name + '! 🤲';
+  document.getElementById('amb-my-pledged').textContent = '$' + (amb.totalPledged || 0).toLocaleString();
+  document.getElementById('amb-my-goal').textContent = '$' + (amb.pledgeGoal || 0).toLocaleString();
+  const myD = cachedData.donors.filter(d => d.ambassadorId === currentAmbassadorId);
+  document.getElementById('amb-my-donors').textContent = myD.length;
+  const pct = amb.pledgeGoal ? Math.min(100, Math.round((amb.totalPledged||0) / amb.pledgeGoal * 100)) : 0;
+  document.getElementById('amb-progress-bar').style.width = pct + '%';
+  document.getElementById('amb-progress-pct').textContent = pct + '%';
+  document.getElementById('amb-progress-label').textContent = '$' + (amb.totalPledged||0).toLocaleString() + ' of $' + (amb.pledgeGoal||0).toLocaleString();
+  renderAmbDonors(myD);
+  renderAmbDownline();
+  toast('Welcome, ' + data.name + '! JazakAllah khair 🌟', 'info');
+}
+
+async function logout() {
+  if (authToken) {
+    try {
+      await fetch(API_BASE + '/auth/logout', { method: 'POST', headers: authHeaders() });
+    } catch (e) { /* best-effort */ }
+  }
+  authToken = null;
+  currentUser = null;
+  currentRole = null;
+  currentAmbassadorId = null;
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('amb-portal').style.display = 'none';
+}
+
+// ── LOAD ALL DATA ──
+async function loadAllData() {
+  const [ambassadors, donors, volunteers, pledgeCards, events, callLogs, donationBoxes, townHalls] = await Promise.all([
+    apiGet('/ambassadors'),
+    apiGet('/donors'),
+    apiGet('/volunteers'),
+    apiGet('/pledge-cards'),
+    apiGet('/events'),
+    apiGet('/call-logs'),
+    apiGet('/donation-boxes'),
+    apiGet('/townhalls')
+  ]);
+  cachedData.ambassadors = ambassadors || [];
+  cachedData.donors = donors || [];
+  cachedData.volunteers = volunteers || [];
+  cachedData.pledgeCards = pledgeCards || [];
+  cachedData.events = events || [];
+  cachedData.callLogs = callLogs || [];
+  cachedData.donationBoxes = donationBoxes || [];
+  cachedData.townHalls = townHalls || [];
+  renderAll();
+}
+
+// ── PAGE NAVIGATION ──
+const pageTitles = {
+  dashboard:['Dashboard','Welcome back, Admin 🤲'],
+  ambassadors:['Ambassadors','Manage your ambassador network'],
+  donors:['Donors & Pledges','All donor pledges and status'],
+  volunteers:['Volunteers','Event volunteer management'],
+  pledgecards:['Pledge Cards','Digital pledge cards and unprocessed queue'],
+  followups:['Follow-ups','4-week ambassador engagement workflow'],
+  events:['Events','Town halls, dinners, and fundraising events'],
+  townhalls:['Town Halls','Schedule and track town hall meetings'],
+  messages:['Messages','Send messages and templates'],
+  recurring:['Recurring Pledges','Monthly pledge tracking'],
+  corporate:['Corporate Matching','Employer matching tracker'],
+  taxreceipts:['Tax Receipts','Year-end receipts and reminders'],
+  resources:['Resources','Flyers, renderings, ambassador materials']
+};
+
+async function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    n.classList.remove('active');
+    if (n.getAttribute('onclick') && n.getAttribute('onclick').includes("'" + name + "'")) n.classList.add('active');
+  });
+  if (pageTitles[name]) {
+    document.getElementById('page-title').textContent = pageTitles[name][0];
+    document.getElementById('page-subtitle').textContent = pageTitles[name][1];
+  }
+  // Refresh data for the page
+  await loadAllData();
+  if (name==='pledgecards') populateAllSelects();
+  if (name==='messages') { renderMessages(); populateAllSelects(); }
+  if (name==='townhalls') populateAllSelects();
+}
+
+// ── RENDER ALL ──
+function renderAll() {
+  updateStats();
+  renderDashboard();
+  renderAmbassadors();
+  renderDonors();
+  renderVolunteers();
+  renderPledgeCards();
+  renderFollowups();
+  renderEvents();
+  renderTownHalls();
+  renderMessages();
+  renderRecurring();
+  renderCorporate();
+  renderTaxReceipts();
+  renderCallLog();
+  renderCashBoxes();
+  populateAllSelects();
+}
+
+// ── STATS ──
+function updateStats() {
+  const donors = cachedData.donors;
+  const ambassadors = cachedData.ambassadors;
+  const pledgeCards = cachedData.pledgeCards;
+
+  const total = donors.reduce((s, d) => s + (d.pledgeAmount || 0), 0);
+  const collected = donors.filter(d => d.status === 'Collected').reduce((s, d) => s + (d.pledgeAmount || 0), 0);
+  const corp = donors.filter(d => d.corporateMatch).reduce((s, d) => s + (d.pledgeAmount || 0), 0);
+  const mrr = donors.filter(d => d.recurringType === 'monthly').reduce((s, d) => s + (d.pledgeAmount || 0), 0);
+  const goal = 500000;
+  const pct = total ? Math.round(total / goal * 100) : 0;
+  const up = pledgeCards.filter(p => p.status === 'unprocessed').length;
+
+  document.getElementById('stat-amb').textContent = ambassadors.length;
+  document.getElementById('stat-don').textContent = donors.length;
+  document.getElementById('stat-pledged').textContent = '$' + (total / 1000).toFixed(1) + 'k';
+  document.getElementById('stat-mrr').textContent = '$' + (mrr / 1000).toFixed(1) + 'k';
+  document.getElementById('dash-raised').textContent = '$' + total.toLocaleString();
+  document.getElementById('dash-col').textContent = '$' + collected.toLocaleString();
+  document.getElementById('dash-pend').textContent = '$' + (total - collected).toLocaleString();
+  document.getElementById('dash-corp').textContent = '$' + corp.toLocaleString();
+  document.getElementById('dash-pct').textContent = pct + '%';
+  document.getElementById('dash-progress').style.width = Math.max(pct, 0.5) + '%';
+  document.getElementById('amb-badge').textContent = ambassadors.length;
+  document.getElementById('fu-badge').textContent = ambassadors.length;
+  document.getElementById('unprocessed-badge').textContent = up;
+  document.getElementById('up-count').textContent = up;
+}
+
+// ── DASHBOARD ──
+function renderDashboard() {
+  const up = cachedData.pledgeCards.filter(p => p.status === 'unprocessed');
+  document.getElementById('dash-unprocessed').innerHTML = up.length
+    ? up.map(p => `<div class="unprocessed-item"><span style="font-size:20px;">⚠️</span><div style="flex:1;"><div style="font-weight:600;font-size:12px;">${p.donorId||'Donor'} — $${(p.amount||0).toLocaleString()}</div><div style="font-size:10px;color:var(--text-muted);">${p.notes||'Needs follow-up'}</div></div><button class="btn btn-warning btn-xs" onclick="markCardProcessed('${p.id}')">Process</button></div>`).join('')
+    : '<div class="alert alert-success" style="margin:0"><span>✅</span><div>All cards processed!</div></div>';
+
+  document.getElementById('dash-amb-list').innerHTML = cachedData.ambassadors.slice(0, 3).map(a => {
+    const name = a.name || ((a.fname||'') + ' ' + (a.lname||''));
+    const pct = a.pledgeGoal ? Math.min(100, Math.round((a.totalPledged||0) / a.pledgeGoal * 100)) : 0;
+    return `<div style="display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--border);"><div style="width:30px;height:30px;border-radius:50%;background:var(--emerald);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:10px;flex-shrink:0;">${name.substring(0,2).toUpperCase()}</div><div style="flex:1;"><div style="font-size:12px;font-weight:600;">${name}</div><div style="font-size:9px;color:var(--text-muted);">${a.city||''}</div></div><div style="text-align:right;"><div style="font-size:11px;font-weight:700;color:var(--emerald);">$${(a.totalPledged||0).toLocaleString()}</div><div style="font-size:9px;color:var(--text-muted);">/$${(a.pledgeGoal||0).toLocaleString()}</div></div></div>`;
+  }).join('') || '<div class="empty-state"><div class="empty-icon">🤝</div><p>No ambassadors yet.</p></div>';
+
+  document.getElementById('dash-fu-list').innerHTML = cachedData.ambassadors.slice(0, 3).map(a => {
+    const name = a.name || ((a.fname||'') + ' ' + (a.lname||''));
+    return `<div style="display:flex;align-items:center;gap:7px;padding:7px 0;border-bottom:1px solid var(--border);"><div style="flex:1;font-size:12px;font-weight:600;">${name}</div><span class="badge badge-gold">Follow-up</span><button class="btn btn-primary btn-xs" onclick="toast('Follow-up sent to ${name}!','info')">Send</button></div>`;
+  }).join('') || '<div class="alert alert-success" style="margin:0"><span>✅</span><div>All caught up!</div></div>';
+
+  document.getElementById('dash-events-list').innerHTML = cachedData.events.slice(0, 3).map(e => {
+    const d = e.eventDate ? new Date(e.eventDate) : new Date();
+    const sc = { Confirmed: 'badge-green', Planning: 'badge-gold' }[e.status] || 'badge-gray';
+    return `<div style="padding:7px 0;border-bottom:1px solid var(--border);"><div style="font-size:9px;font-weight:700;color:var(--gold);">${d.toLocaleDateString('en-US', {month:'short',day:'numeric'})}</div><div style="font-size:12px;font-weight:600;color:var(--emerald);">${e.title}</div><span class="badge ${sc}">${e.status}</span></div>`;
+  }).join('') || '<div class="empty-state"><div class="empty-icon">🎙️</div><p>No events yet.</p></div>';
+}
+
+// ── AMBASSADORS ──
+function renderAmbassadors(filter = '') {
+  const grid = document.getElementById('ambassadors-grid');
+  const list = cachedData.ambassadors.filter(a => {
+    const name = a.name || ((a.fname||'') + ' ' + (a.lname||''));
+    return !filter || name.toLowerCase().includes(filter.toLowerCase()) || (a.city||'').toLowerCase().includes(filter.toLowerCase());
+  });
+  if (!list.length) { grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🤝</div><p>No ambassadors found.</p></div>'; return; }
+  grid.innerHTML = list.map((a, i) => {
+    const name = a.name || ((a.fname||'') + ' ' + (a.lname||''));
+    const initials = name.substring(0, 2).toUpperCase();
+    const pct = a.pledgeGoal ? Math.min(100, Math.round((a.totalPledged||0) / a.pledgeGoal * 100)) : 0;
+    const color = COLORS[i % COLORS.length];
+    return `<div class="card"><div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;"><div style="width:44px;height:44px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:15px;flex-shrink:0;">${initials}</div><div><div style="font-size:15px;font-weight:700;color:var(--emerald);">${name}</div><div style="font-size:10px;color:var(--text-muted);">${a.city||''}</div><span class="badge badge-green" style="margin-top:3px;">Active</span></div></div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:10px;"><div style="text-align:center;background:var(--cream);border-radius:7px;padding:7px;"><div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:700;color:var(--emerald);">$${((a.totalPledged||0)/1000).toFixed(1)}k</div><div style="font-size:9px;color:var(--text-muted);">Pledged</div></div><div style="text-align:center;background:var(--cream);border-radius:7px;padding:7px;"><div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:700;color:var(--emerald);">${cachedData.donors.filter(d=>d.ambassadorId===a.id).length}</div><div style="font-size:9px;color:var(--text-muted);">Donors</div></div><div style="text-align:center;background:var(--cream);border-radius:7px;padding:7px;"><div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:700;color:var(--gold);">${pct}%</div><div style="font-size:9px;color:var(--text-muted);">Goal</div></div></div><div class="progress-bar" style="margin-bottom:8px;"><div class="progress-fill" style="width:${pct}%"></div></div><div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;">Code: <strong>${a.code||'—'}</strong></div><div style="display:flex;gap:5px;"><button class="btn btn-outline btn-sm" style="flex:1;" onclick="viewAmbassador('${a.id}')">Details</button><button class="btn btn-primary btn-sm" onclick="toast('Follow-up sent to ${name}!','info')">Follow-up</button></div></div>`;
+  }).join('');
+}
+
+// ── DONORS ──
+let expandedDonorId = null;
+
+function renderDonors(filter = '') {
+  const grid = document.getElementById('donors-grid');
+  if (!grid) return;
+  const list = cachedData.donors.filter(d => !filter || (d.name||'').toLowerCase().includes(filter.toLowerCase()));
+  if (!list.length) { grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">💛</div><p>No donors found.</p></div>'; return; }
+
+  grid.innerHTML = list.map((d, i) => {
+    const amb = cachedData.ambassadors.find(a => a.id === d.ambassadorId);
+    const ambName = amb ? (amb.name || amb.fname) : null;
+    const sc = { Collected: 'badge-green', Pledged: 'badge-gold' }[d.status] || 'badge-gray';
+    const tc = { Zakat: 'badge-blue', Sadaqah: 'badge-green', 'Sadaqah Jariyah': 'badge-purple', General: 'badge-gray' }[d.donationType] || 'badge-gray';
+    const total = d.recurringType !== 'one-time' ? (d.pledgeAmount||0) * (d.duration||1) : (d.pledgeAmount||0);
+    const initials = (d.name||'??').substring(0,2).toUpperCase();
+    const color = COLORS[i % COLORS.length];
+    const isExpanded = expandedDonorId === d.id;
+
+    const card = `<div class="card" style="cursor:pointer;${isExpanded ? 'border:1.5px solid var(--gold);' : ''}" onclick="toggleDonorDetail('${d.id}')">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div style="width:38px;height:38px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:13px;flex-shrink:0;">${initials}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:700;color:var(--emerald);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.name||'—'}</div>
+          <div style="font-size:10px;color:var(--text-muted);">${ambName ? 'via ' + ambName : 'Direct'}</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:8px;">
+        <div><strong style="color:var(--emerald);font-size:16px;">$${(d.pledgeAmount||0).toLocaleString()}</strong><div style="font-size:9px;color:var(--text-muted);">Total: $${total.toLocaleString()}</div></div>
+        <span class="badge ${sc}">${d.status||'Pledged'}</span>
+      </div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;">
+        <span class="badge ${tc}">${d.donationType||'General'}</span>
+        ${d.recurringType && d.recurringType !== 'one-time' ? `<span class="badge badge-blue">${d.recurringType} ×${d.duration||0}mo</span>` : ''}
+        ${d.corporateMatch ? '<span class="badge badge-blue">Corp Match ✓</span>' : ''}
+      </div>
+    </div>`;
+
+    if (!isExpanded) return card;
+
+    const detail = `<div class="card" style="grid-column:1/-1;background:var(--cream);border:1.5px solid var(--gold);" onclick="event.stopPropagation()">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+        <div>
+          <div style="font-size:18px;font-weight:700;color:var(--emerald);">${d.name||'—'}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${d.email||'No email'} ${d.phone ? '· ' + d.phone : ''}</div>
+          ${d.address ? `<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">📍 ${d.address}</div>` : ''}
+        </div>
+        <button class="modal-close" onclick="event.stopPropagation();toggleDonorDetail('${d.id}')">✕</button>
+      </div>
+      <div class="grid-3" style="margin-bottom:14px;">
+        <div style="background:white;border-radius:9px;padding:11px;text-align:center;"><div style="font-size:18px;font-weight:700;color:var(--emerald);">$${(d.pledgeAmount||0).toLocaleString()}</div><div style="font-size:9px;color:var(--text-muted);">Pledge Amount</div></div>
+        <div style="background:white;border-radius:9px;padding:11px;text-align:center;"><div style="font-size:18px;font-weight:700;color:var(--gold);">$${total.toLocaleString()}</div><div style="font-size:9px;color:var(--text-muted);">Total Commitment</div></div>
+        <div style="background:white;border-radius:9px;padding:11px;text-align:center;"><div style="font-size:18px;font-weight:700;color:var(--info);">${d.paymentMethod||'—'}</div><div style="font-size:9px;color:var(--text-muted);">Payment Method</div></div>
+      </div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap;">
+        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();toggleDonorStatus('${d.id}','${d.status}')">${d.status === 'Pledged' ? '✓ Mark Collected' : '↩ Mark Pledged'}</button>
+        <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();showPage('messages')">💬 Message Donor</button>
+      </div>
+    </div>`;
+
+    return card + detail;
+  }).join('');
+}
+
+function toggleDonorDetail(id) {
+  expandedDonorId = expandedDonorId === id ? null : id;
+  renderDonors();
+}
+
+// ── VOLUNTEERS ──
+function renderVolunteers(filter = '') {
+  const grid = document.getElementById('volunteers-grid');
+  const list = cachedData.volunteers.filter(v => !filter || (v.name||'').toLowerCase().includes(filter.toLowerCase()));
+  if (!list.length) { grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">👥</div><p>No volunteers.</p></div>'; return; }
+  const rC = { 'Pledge Collector (Row)': 'badge-blue', 'Kiosk / Swipe Terminal': 'badge-purple', 'Runner': 'badge-green', 'Ambassador Program': 'badge-gold', 'Computer / Mohid Entry': 'badge-orange', 'General': 'badge-gray' };
+  grid.innerHTML = list.map((v, i) => {
+    const color = COLORS[i % COLORS.length];
+    const initials = (v.name||'??').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    return `<div class="vol-card"><div class="vol-header"><div class="vol-avatar" style="background:${color}">${initials}</div><div><div style="font-size:13px;font-weight:700;color:var(--emerald);">${v.name||'—'}</div><div style="font-size:10px;color:var(--text-muted);">${v.phone||''}</div></div></div><span class="badge ${rC[v.role]||'badge-gray'}" style="margin-bottom:7px;">${v.role||'—'}</span><div style="font-size:10px;color:var(--text-muted);margin-bottom:7px;">📍 ${v.rowArea||''}</div></div>`;
+  }).join('');
+}
+
+// ── PLEDGE CARDS ──
+function renderPledgeCards() {
+  const up = cachedData.pledgeCards.filter(p => p.status === 'unprocessed');
+  document.getElementById('unprocessed-list').innerHTML = up.length
+    ? up.map(p => `<div class="unprocessed-item"><span style="font-size:20px;">⚠️</span><div style="flex:1;"><div style="font-weight:700;font-size:13px;">$${(p.amount||0).toLocaleString()} Pledge</div><div style="font-size:11px;color:var(--text-muted);">${p.recurringType||'one-time'} · ${p.paymentMethod||''}</div>${p.notes ? `<div style="font-size:10px;color:var(--warning);font-weight:600;margin-top:3px;">⚠️ ${p.notes}</div>` : ''}</div><div style="display:flex;flex-direction:column;gap:5px;"><button class="btn btn-primary btn-sm" onclick="markCardProcessed('${p.id}')">✓ Process</button></div></div>`).join('')
+    : '<div class="alert alert-success"><span>✅</span><div>All pledge cards processed!</div></div>';
+
+  document.getElementById('pledge-cards-table').innerHTML = cachedData.pledgeCards.map(p => {
+    const sc = { processed: 'badge-green', unprocessed: 'badge-red' }[p.status] || 'badge-gray';
+    return `<tr><td><div style="font-weight:600;">$${(p.amount||0).toLocaleString()}</div></td><td><strong>$${(p.amount||0).toLocaleString()}</strong></td><td>${p.recurringType !== 'one-time' ? `<span class="badge badge-blue">${p.recurringType}</span>` : 'One-time'}</td><td>${p.duration > 1 ? p.duration + 'mo' : '—'}</td><td style="font-size:10px;">${p.paymentMethod||''}</td><td style="font-size:10px;">${p.volunteerId||''}</td><td style="font-size:10px;">${p.rowArea||''}</td><td><span class="badge ${sc}">${p.status}</span></td><td><button class="btn btn-xs ${p.status==='unprocessed'?'btn-warning':'btn-outline'}" onclick="markCardProcessed('${p.id}')">${p.status==='unprocessed'?'Process':'Reopen'}</button></td></tr>`;
+  }).join('');
+}
+
+// ── FOLLOW-UPS ──
+function renderFollowups() {
+  document.getElementById('followup-list').innerHTML = cachedData.ambassadors.map(a => {
+    const name = a.name || ((a.fname||'') + ' ' + (a.lname||''));
+    return `<div class="followup-week active"><div class="week-num active">2</div><div style="flex:1;"><div style="font-weight:700;font-size:12px;">${name}</div><div style="font-size:10px;color:var(--text-muted);">${a.city||''} · Follow-up needed</div><div style="display:flex;gap:5px;margin-top:6px;"><button class="btn btn-primary btn-sm" onclick="toast('Follow-up sent to ${name}!','info')">Send Follow-up</button></div></div></div>`;
+  }).join('') || '<div class="empty-state"><div class="empty-icon">🔔</div><p>No ambassadors to follow up with.</p></div>';
+}
+
+// ── EVENTS ──
+function renderEvents(typeFilter = 'all') {
+  const grid = document.getElementById('events-grid');
+  const list = typeFilter === 'all' ? cachedData.events : cachedData.events.filter(e => e.type === typeFilter);
+  if (!list.length) { grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🎙️</div><p>No events found.</p></div>'; return; }
+  const ti = { 'Town Hall': '🎙️', 'Benefit Dinner': '🍽️', 'Eid/Jumuah': '🕌', 'BBQ': '🔥', 'Khatam-e-Quran': '📖', 'Other': '📅' };
+  const sc = { Confirmed: 'badge-green', Planning: 'badge-gold', Completed: 'badge-gray' };
+  grid.innerHTML = list.map(e => {
+    const d = e.eventDate ? new Date(e.eventDate) : new Date();
+    return `<div class="card" style="border-top:4px solid var(--emerald);"><div style="font-size:10px;font-weight:700;color:var(--gold);margin-bottom:3px;">${d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}</div><div style="font-size:15px;font-weight:700;color:var(--emerald);margin-bottom:3px;">${ti[e.type]||'📅'} ${e.title}</div><div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;">📍 ${e.venue||''}</div><div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;"><span class="badge ${sc[e.status]||'badge-gray'}">${e.status||''}</span><span class="badge badge-gray">${e.type||''}</span><span style="font-size:10px;color:var(--text-muted);">👥 ~${e.attendance||0}</span></div>${e.pledgeTarget ? `<div style="margin-bottom:8px;"><div style="font-size:9px;color:var(--text-muted);margin-bottom:3px;">Target: $${e.pledgeTarget.toLocaleString()}</div><div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div></div>` : ''}<div style="display:flex;gap:5px;"><button class="btn btn-outline btn-sm" style="flex:1;" onclick="toast('Invites sent! 📧','info')">Invite</button><button class="btn btn-primary btn-sm" onclick="toast('Confirmed! ✅')">Confirm</button></div></div>`;
+  }).join('');
+}
+
+function filterEvents(type, btn) {
+  document.querySelectorAll('#page-events .tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderEvents(type);
+}
+
+// ── TOWN HALLS ──
+function renderTownHalls() {
+  const grid = document.getElementById('townhalls-grid');
+  if (!grid) return;
+  const list = cachedData.townHalls;
+  if (!list.length) { grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🏛️</div><p>No town halls scheduled yet.</p></div>'; return; }
+  const sc = { planned: 'badge-gold', confirmed: 'badge-green', completed: 'badge-gray', cancelled: 'badge-red' };
+  grid.innerHTML = list.map(t => {
+    const d = t.eventDate ? new Date(t.eventDate) : null;
+    const amb = cachedData.ambassadors.find(a => a.id === t.hostAmbassadorId);
+    return `<div class="card" style="border-top:4px solid var(--gold);">
+      <div style="font-size:10px;font-weight:700;color:var(--gold);margin-bottom:3px;">${d ? d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}) : 'Date TBD'}${t.eventTime ? ' · ' + t.eventTime : ''}</div>
+      <div style="font-size:15px;font-weight:700;color:var(--emerald);margin-bottom:3px;">🏛️ ${t.venue || 'Town Hall'}</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px;">📍 ${t.address || 'Address TBD'}</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;">👤 ${t.responsiblePersonName || '—'} ${t.responsiblePersonPhone ? '· ' + t.responsiblePersonPhone : ''}</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;"><span class="badge ${sc[t.status]||'badge-gray'}">${t.status||'planned'}</span>${t.durationMinutes ? `<span class="badge badge-gray">${t.durationMinutes} min</span>` : ''}<span style="font-size:10px;color:var(--text-muted);">👥 ~${t.rsvpCount||0} RSVPs</span></div>
+      ${amb ? `<div style="font-size:10px;color:var(--emerald);font-weight:600;margin-bottom:8px;">Hosted by ${amb.name}</div>` : ''}
+      <button class="btn btn-danger btn-xs" style="width:100%;" onclick="deleteTownHall('${t.id}')">🗑️ Delete</button>
+    </div>`;
+  }).join('');
+}
+
+async function deleteTownHall(id) {
+  if (!confirm('Delete this town hall? This cannot be undone.')) return;
+  const ok = await apiDelete('/townhalls/' + id);
+  if (ok) {
+    await loadAllData();
+    toast('Town hall deleted');
+  }
+}
+
+async function addTownHall() {
+  const responsibleName = document.getElementById('th-responsible-name').value.trim();
+  const date = document.getElementById('th-date').value;
+  if (!responsibleName || !date) { toast('Please enter the responsible person and date', 'error'); return; }
+  const body = {
+    responsiblePersonName: responsibleName,
+    responsiblePersonPhone: document.getElementById('th-responsible-phone').value,
+    venue: document.getElementById('th-venue').value,
+    address: document.getElementById('th-address').value,
+    placeId: document.getElementById('th-place-id').value || null,
+    lat: document.getElementById('th-lat').value ? parseFloat(document.getElementById('th-lat').value) : null,
+    lng: document.getElementById('th-lng').value ? parseFloat(document.getElementById('th-lng').value) : null,
+    eventDate: date,
+    eventTime: document.getElementById('th-time').value,
+    durationMinutes: parseInt(document.getElementById('th-duration').value) || 60,
+    rsvpCount: parseInt(document.getElementById('th-rsvp').value) || 0,
+    hostAmbassadorId: document.getElementById('th-ambassador').value || null,
+    status: 'planned'
+  };
+  const result = await apiPost('/townhalls', body);
+  if (result) {
+    closeModal('add-townhall-modal');
+    ['th-responsible-name','th-responsible-phone','th-venue','th-address','th-time','th-rsvp'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    document.getElementById('th-duration').value = '60';
+    await loadAllData();
+    toast('🏛️ Town hall scheduled for ' + date + '!');
+  }
+}
+
+// ── MESSAGES ──
+const MSG_TEMPLATES = [
+  {week:1,label:'Week 1 — Welcome',icon:'👋',text:(n,c)=>`As-salamu alaykum ${n}! 🌟\n\nJazakAllah khair for joining Donorly as an Ambassador!\n\nYour Ambassador Code: *${c}*\n\nMay Allah put barakah in your efforts. 🤲`},
+  {week:2,label:'Week 2 — Resource Check',icon:'📦',text:(n)=>`As-salamu alaykum ${n}!\n\nChecking in after your first week 😊\n\nWhat resources can I provide? Jazak Allah khair 🤲`},
+  {week:3,label:'Week 3 — Contact Sharing',icon:'📋',text:(n)=>`As-salamu alaykum ${n}!\n\nWeek 3 check-in! Would you like to share contacts or get warm leads? Jazak Allah khair 🌟`},
+  {week:4,label:'Week 4 — Town Hall Offer',icon:'🎙️',text:(n)=>`As-salamu alaykum ${n}!\n\n🎙️ *Why not coordinate a Town Hall?*\n\nYou bring your community — we handle the rest! Jazak Allah khair 🤲`},
+  {week:5,label:'Year-End Tax Reminder',icon:'🧾',text:()=>`As-salamu alaykum!\n\n🧾 *Year-End Tax Reminder*\n\nPlease donate before *December 31* to be tax-deductible.\n\nJazak Allah khair! 🤲`},
+  {week:6,label:'Corporate Match Reminder',icon:'🏢',text:(n)=>`As-salamu alaykum ${n}!\n\n🏢 *Corporate Matching Opportunity*\n\nYour employer may match your donation! Check Benevity or YourCause.\n\nJazak Allah khair! 🌟`},
+];
+
+function renderMessages() {
+  document.getElementById('msg-templates').innerHTML = MSG_TEMPLATES.map(t => `<div style="border:1.5px solid var(--border);border-radius:9px;padding:11px;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;"><div><span style="font-size:13px;">${t.icon}</span> <strong style="font-size:11px;">${t.label}</strong></div><button class="btn btn-outline btn-sm" onclick="previewTemplate(${t.week})">Preview</button></div><div style="font-size:10px;color:var(--text-muted);">${t.week<=4?'Auto at week '+t.week:'Manual'}</div></div>`).join('');
+  const sel = document.getElementById('msg-to');
+  sel.innerHTML = '<option value="">Select Ambassador...</option>' + cachedData.ambassadors.map(a => `<option value="${a.id}">${a.name||(a.fname+' '+a.lname)}</option>`).join('');
+}
+
+// ── RECURRING ──
+function renderRecurring() {
+  const r = cachedData.donors.filter(d => d.recurringType && d.recurringType !== 'one-time');
+  const mrr = r.reduce((s, d) => s + (d.pledgeAmount||0), 0);
+  const arr = r.reduce((s, d) => s + (d.pledgeAmount||0) * (d.duration||1), 0);
+  const avg = r.length ? Math.round(r.reduce((s, d) => s + (d.duration||0), 0) / r.length) : 0;
+  document.getElementById('rec-count').textContent = r.length;
+  document.getElementById('rec-mrr').textContent = '$' + mrr.toLocaleString();
+  document.getElementById('rec-arr').textContent = '$' + (arr/1000).toFixed(0) + 'k';
+  document.getElementById('rec-avg').textContent = avg + 'mo';
+  document.getElementById('recurring-table').innerHTML = r.map(d => {
+    const sc = { Collected: 'badge-green', Pledged: 'badge-gold' }[d.status] || 'badge-gray';
+    const total = (d.pledgeAmount||0) * (d.duration||1);
+    return `<tr><td><div style="font-weight:600;">${d.name||'—'}</div></td><td><strong style="color:var(--emerald);">$${(d.pledgeAmount||0).toLocaleString()}/mo</strong></td><td>${d.duration||0}mo</td><td><strong>$${total.toLocaleString()}</strong></td><td><span class="badge badge-green">Active</span></td><td>${d.duration||0}mo left</td><td><span class="badge ${sc}">${d.status||'Pledged'}</span></td></tr>`;
+  }).join('') || '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);">No recurring donors yet.</td></tr>';
+}
+
+// ── CORPORATE ──
+function renderCorporate() {
+  const c = cachedData.donors.filter(d => d.corporateMatch);
+  document.getElementById('corp-count').textContent = c.length;
+  document.getElementById('corp-total').textContent = '$' + c.reduce((s, d) => s + (d.pledgeAmount||0), 0).toLocaleString();
+  document.getElementById('corp-table').innerHTML = c.map(d => `<tr><td><div style="font-weight:600;">${d.name||'—'}</div></td><td><strong>$${(d.pledgeAmount||0).toLocaleString()}</strong></td><td style="font-size:11px;">${d.employer||'—'}</td><td><span class="badge badge-blue">Benevity</span></td><td><span class="badge badge-gold">Pending</span></td><td><button class="btn btn-xs btn-outline" onclick="toast('Reminder sent!','info')">Remind</button></td></tr>`).join('') || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-muted);">No corporate match donors yet.</td></tr>';
+}
+
+// ── TAX RECEIPTS ──
+function renderTaxReceipts() {
+  const rows = cachedData.donors.map(d => {
+    const collected = d.status === 'Collected';
+    const total = collected ? (d.pledgeAmount||0) : 0;
+    const sc = collected ? 'badge-green' : 'badge-red';
+    return `<tr><td><div style="font-weight:600;">${d.name||'—'}</div></td><td><strong>$${total.toLocaleString()}</strong></td><td>2026</td><td style="font-size:10px;">${d.email||'<span style="color:var(--danger)">Missing!</span>'}</td><td><span class="badge ${sc}">${collected?'Sent':'Pending'}</span></td><td><button class="btn btn-xs btn-outline" onclick="toast('Receipt generated! 🧾','info')">Generate</button></td></tr>`;
+  });
+  document.getElementById('tax-table').innerHTML = rows.join('') || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-muted);">No donors yet.</td></tr>';
+  const sent = cachedData.donors.filter(d => d.status === 'Collected').length;
+  document.getElementById('receipt-sent').textContent = sent;
+  document.getElementById('receipt-pending').textContent = cachedData.donors.length - sent;
+}
+
+// ── AMBASSADOR DONORS ──
+function renderAmbDonors(donors) {
+  const tbody = document.getElementById('amb-donors-table');
+  if (!donors.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:18px;color:var(--text-muted);">No donors yet. Share your code!</td></tr>'; return; }
+  tbody.innerHTML = donors.map(d => {
+    const sc = { Collected: 'badge-green', Pledged: 'badge-gold' }[d.status] || 'badge-gray';
+    const tc = { Zakat: 'badge-blue', Sadaqah: 'badge-green', 'Sadaqah Jariyah': 'badge-purple', General: 'badge-gray' }[d.donationType] || 'badge-gray';
+    return `<tr><td><div style="font-weight:600;">${d.name||'—'}</div></td><td><strong>$${(d.pledgeAmount||0).toLocaleString()}</strong></td><td>${d.recurringType&&d.recurringType!=='one-time'?`<span class="badge badge-blue">${d.recurringType}</span>`:'—'}</td><td><span class="badge ${tc}">${d.donationType||'General'}</span></td><td><span class="badge ${sc}">${d.status||'Pledged'}</span></td></tr>`;
+  }).join('');
+}
+
+// ── CALL LOG ──
+function renderCallLog() {
+  const tbody = document.getElementById('calllog-table');
+  if (!tbody) return;
+  if (!cachedData.callLogs.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted);">No call logs yet.</td></tr>'; return; }
+  tbody.innerHTML = cachedData.callLogs.map(cl => {
+    const outcomeC = { 'No Answer': 'badge-red', 'Call Disconnected': 'badge-red', 'Wrong Number': 'badge-red', 'Reached — Will Pay': 'badge-green', 'Reached — Declined': 'badge-gray', 'Left Voicemail': 'badge-gold', 'WhatsApp Sent': 'badge-blue' }[cl.outcome] || 'badge-gray';
+    return `<tr><td><div style="font-weight:600;">${cl.donorId||'—'}</div></td><td style="font-size:11px;">—</td><td style="font-size:11px;">${cl.pledgeCardId||'—'}</td><td><span class="badge badge-gold">${cl.attemptCount||1} attempt(s)</span></td><td style="font-size:10px;color:var(--text-muted);">${cl.calledAt ? new Date(cl.calledAt).toLocaleDateString() : '—'}</td><td><span class="badge ${outcomeC}">${cl.outcome||'—'}</span></td><td style="font-size:10px;">${cl.notes||''}</td><td><button class="btn btn-xs btn-primary" onclick="openModal('add-calllog-modal')">+ Log</button></td></tr>`;
+  }).join('');
+}
+
+// ── CASH BOXES ──
+function renderCashBoxes() {
+  const tbody = document.getElementById('cashbox-table');
+  if (!tbody) return;
+  const boxes = cachedData.donationBoxes;
+  const total = boxes.filter(b => b.status === 'counted').reduce((s, b) => s + (b.amount||0), 0);
+  const counted = boxes.filter(b => b.status === 'counted').length;
+  const pending = boxes.filter(b => b.status !== 'counted').length;
+  const el1 = document.getElementById('cash-total'); const el2 = document.getElementById('cash-boxes');
+  const el3 = document.getElementById('cash-counted'); const el4 = document.getElementById('cash-pending-boxes');
+  if (el1) el1.textContent = '$' + total.toLocaleString();
+  if (el2) el2.textContent = boxes.length;
+  if (el3) el3.textContent = counted;
+  if (el4) el4.textContent = pending;
+  tbody.innerHTML = boxes.map(b => {
+    const sc = b.status === 'counted' ? 'badge-green' : 'badge-gold';
+    return `<tr><td><strong>${b.boxNumber||'—'}</strong></td><td style="font-size:11px;">${b.area||''}</td><td style="font-size:11px;">${b.volunteerId||''}</td><td><strong style="color:var(--emerald);">$${(b.amount||0).toLocaleString()}</strong></td><td><span class="badge ${sc}">${b.status||'pending'}</span></td><td style="font-size:10px;">${b.notes||''}</td><td><button class="btn btn-xs btn-outline" onclick="toast('Box updated!','info')">Update</button></td></tr>`;
+  }).join('') || '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);">No donation boxes logged yet.</td></tr>';
+}
+
+// ── ADD AMBASSADOR ──
+async function addAmbassador() {
+  const fname = document.getElementById('amb-fname').value.trim();
+  const lname = document.getElementById('amb-lname').value.trim();
+  if (!fname || !lname) { toast('Please enter first and last name', 'error'); return; }
+  const code = document.getElementById('amb-code-new').value.trim().toUpperCase() || fname.toUpperCase().substring(0, 4) + new Date().getFullYear();
+  const body = {
+    name: fname + ' ' + lname,
+    email: document.getElementById('amb-email-new').value,
+    phone: document.getElementById('amb-phone').value,
+    city: document.getElementById('amb-city').value,
+    code,
+    pledgeGoal: parseFloat(document.getElementById('amb-goal-new').value) || 10000,
+    totalPledged: 0,
+    status: 'Active',
+    createdAt: new Date().toISOString()
+  };
+  const result = await apiPost('/ambassadors', body);
+  if (result) {
+    closeModal('add-ambassador-modal');
+    ['amb-fname','amb-lname','amb-email-new','amb-phone','amb-city','amb-country','amb-goal-new','amb-code-new','amb-note'].forEach(id => document.getElementById(id).value = '');
+    await loadAllData();
+    toast('🎉 ' + fname + ' ' + lname + ' added! Welcome message sent.');
+  }
+}
+
+// ── ADD DONOR ──
+async function addDonor() {
+  const name = document.getElementById('donor-name').value.trim();
+  const amount = parseFloat(document.getElementById('donor-amount').value) || 0;
+  if (!name || !amount) { toast('Please enter donor name and amount', 'error'); return; }
+  const ambId = document.getElementById('donor-ambassador').value || null;
+  const corp = document.getElementById('donor-corp').checked;
+  const body = {
+    name,
+    phone: document.getElementById('donor-phone').value,
+    email: document.getElementById('donor-email').value,
+    address: document.getElementById('donor-city').value,
+    pledgeAmount: amount,
+    donationType: document.getElementById('donor-type').value,
+    recurringType: document.getElementById('donor-recurring').value,
+    duration: parseInt(document.getElementById('donor-months').value) || 1,
+    paymentMethod: document.getElementById('donor-method').value,
+    ambassadorId: ambId,
+    corporateMatch: corp,
+    employer: corp ? document.getElementById('donor-employer').value : '',
+    status: 'Pledged',
+    createdAt: new Date().toISOString()
+  };
+  const result = await apiPost('/donors', body);
+  if (result) {
+    closeModal('add-donor-modal');
+    ['donor-name','donor-phone','donor-email','donor-city','donor-amount','donor-notes','donor-employer'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('donor-corp').checked = false;
+    document.getElementById('donor-corp-fields').style.display = 'none';
+    await loadAllData();
+    toast('💛 ' + name + ' added! $' + amount.toLocaleString() + ' pledge recorded.');
+  }
+}
+
+// ── ADD VOLUNTEER ──
+async function addVolunteer() {
+  const name = document.getElementById('vol-name').value.trim();
+  if (!name) { toast('Please enter volunteer name', 'error'); return; }
+  const body = {
+    name,
+    phone: document.getElementById('vol-phone').value,
+    email: document.getElementById('vol-email').value,
+    role: document.getElementById('vol-role').value,
+    rowArea: document.getElementById('vol-area').value,
+    status: 'Active',
+    createdAt: new Date().toISOString()
+  };
+  const result = await apiPost('/volunteers', body);
+  if (result) {
+    closeModal('add-volunteer-modal');
+    ['vol-name','vol-phone','vol-email','vol-area','vol-notes'].forEach(id => document.getElementById(id).value = '');
+    await loadAllData();
+    toast('👥 ' + name + ' added as volunteer!');
+  }
+}
+
+// ── SAVE PLEDGE CARD ──
+async function savePledgeCard() {
+  const fname = document.getElementById('pc-fname').value.trim();
+  const amount = parseFloat(document.getElementById('pc-amount').value) || 0;
+  if (!fname || !amount) { toast('Please enter donor name and pledge amount', 'error'); return; }
+  const vol = document.getElementById('pc-volunteer');
+  const volId = vol && vol.value ? vol.value : null;
+  const body = {
+    donorId: fname + ' ' + document.getElementById('pc-lname').value,
+    ambassadorId: document.getElementById('pc-ambassador').value || null,
+    volunteerId: volId,
+    amount,
+    donationType: document.getElementById('pc-dtype').value,
+    recurringType: document.getElementById('pc-recurring').value,
+    duration: parseInt(document.getElementById('pc-months').value) || 1,
+    paymentMethod: document.getElementById('pc-method').value,
+    rowArea: document.getElementById('pc-row').value,
+    corporateMatch: document.getElementById('pc-corp-match').checked,
+    notes: document.getElementById('pc-notes').value,
+    status: 'unprocessed',
+    createdAt: new Date().toISOString()
+  };
+  const result = await apiPost('/pledge-cards', body);
+  if (result) {
+    ['pc-fname','pc-lname','pc-email','pc-phone','pc-address','pc-amount','pc-ccnum','pc-ccexp','pc-cvc','pc-ccname','pc-bank','pc-routing','pc-acct','pc-row','pc-notes'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    const pm = document.getElementById('pc-months'); if (pm) pm.value = '24';
+    const pcm = document.getElementById('pc-corp-match'); if (pcm) pcm.checked = false;
+    await loadAllData();
+    switchPledgeTab('unprocessed', null);
+    toast('📋 ' + fname + "'s pledge card saved! Marked as Unprocessed.", 'warning');
+  }
+}
+
+// ── ADD EVENT ──
+async function addEvent() {
+  const title = document.getElementById('ev-title').value.trim();
+  const date = document.getElementById('ev-date').value;
+  if (!title || !date) { toast('Please enter title and date', 'error'); return; }
+  const body = {
+    title,
+    type: document.getElementById('ev-type').value,
+    venue: document.getElementById('ev-venue').value || 'TBD',
+    hostAmbassadorId: document.getElementById('ev-ambassador').value || null,
+    attendance: parseInt(document.getElementById('ev-attendance').value) || 20,
+    pledgeTarget: parseFloat(document.getElementById('ev-target').value) || 0,
+    status: 'Planning',
+    eventDate: new Date(date).toISOString(),
+    createdAt: new Date().toISOString()
+  };
+  const result = await apiPost('/events', body);
+  if (result) {
+    closeModal('add-event-modal');
+    ['ev-title','ev-date','ev-time','ev-venue','ev-attendance','ev-target','ev-notes'].forEach(id => document.getElementById(id).value = '');
+    await loadAllData();
+    toast('🎙️ "' + title + '" scheduled!');
+  }
+}
+
+// ── SAVE CALL LOG ──
+async function saveCallLog() {
+  const sel = document.getElementById('cl-card');
+  const cardId = sel.value || null;
+  const body = {
+    pledgeCardId: cardId,
+    donorId: cardId,
+    outcome: document.getElementById('cl-outcome').value,
+    notes: document.getElementById('cl-notes').value,
+    caller: document.getElementById('cl-caller').value || 'Admin',
+    attemptCount: 1,
+    calledAt: new Date().toISOString()
+  };
+  const result = await apiPost('/call-logs', body);
+  if (result) {
+    closeModal('add-calllog-modal');
+    ['cl-caller','cl-notes'].forEach(id => document.getElementById(id).value = '');
+    await loadAllData();
+    toast('📞 Call logged! ' + body.outcome);
+  }
+}
+
+// ── SAVE CASH BOX ──
+async function saveCashBox() {
+  const amount = parseFloat(document.getElementById('cb-amount').value) || 0;
+  const num = document.getElementById('cb-num').value || 'Box ' + (cachedData.donationBoxes.length + 1);
+  const vol = document.getElementById('cb-volunteer');
+  const volId = vol && vol.value ? vol.value : null;
+  const body = {
+    boxNumber: num,
+    area: document.getElementById('cb-area').value,
+    volunteerId: volId,
+    amount,
+    status: 'pending',
+    createdAt: new Date().toISOString()
+  };
+  const result = await apiPost('/donation-boxes', body);
+  if (result) {
+    closeModal('add-cashbox-modal');
+    ['cb-num','cb-area','cb-amount','cb-notes'].forEach(id => document.getElementById(id).value = '');
+    await loadAllData();
+    toast('💵 Cash box logged! $' + amount.toLocaleString() + ' recorded.');
+  }
+}
+
+// ── MARK CARD PROCESSED ──
+async function markCardProcessed(id) {
+  const card = cachedData.pledgeCards.find(p => p.id === id);
+  if (!card) return;
+  const newStatus = card.status === 'unprocessed' ? 'processed' : 'unprocessed';
+  const result = await apiPut('/pledge-cards/' + id, { ...card, status: newStatus });
+  if (result) {
+    await loadAllData();
+    toast(newStatus === 'processed' ? '✅ Card processed!' : '↩ Card reopened');
+  }
+}
+
+// ── TOGGLE DONOR STATUS ──
+async function toggleDonorStatus(id, currentStatus) {
+  const donor = cachedData.donors.find(d => d.id === id);
+  if (!donor) return;
+  const newStatus = currentStatus === 'Pledged' ? 'Collected' : 'Pledged';
+  const result = await apiPut('/donors/' + id, { ...donor, status: newStatus });
+  if (result) {
+    await loadAllData();
+    toast(donor.name + ' marked as ' + newStatus + ' ✅');
+  }
+}
+
+// ── VIEW AMBASSADOR ──
+async function viewAmbassador(id) {
+  const a = cachedData.ambassadors.find(x => x.id === id);
+  if (!a) return;
+  const name = a.name || ((a.fname||'') + ' ' + (a.lname||''));
+  const myD = cachedData.donors.filter(d => d.ambassadorId === a.id);
+  const pct = a.pledgeGoal ? Math.min(100, Math.round((a.totalPledged||0) / a.pledgeGoal * 100)) : 0;
+  document.getElementById('amb-detail-name').textContent = name;
+  const downline = await apiGet('/ambassadors/' + id + '/downline');
+  const downlineHtml = (downline && downline.length)
+    ? `<hr class="divider"><div style="font-size:12px;font-weight:600;margin-bottom:7px;">Downline (${downline.length})</div>` +
+      downline.map(d => `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:11px;"><span>${d.name||'—'}</span><span style="font-weight:600;color:var(--gold);">$${(d.totalPledged||0).toLocaleString()}</span></div>`).join('')
+    : '';
+  document.getElementById('amb-detail-body').innerHTML = `<div style="margin-bottom:16px;"><div style="font-size:16px;font-weight:700;color:var(--emerald);">${name}</div><div style="font-size:11px;color:var(--text-muted);">${a.city||''} · ${a.email||''}</div><div style="font-size:11px;color:var(--text-muted);">${a.phone||''}</div></div><div style="background:var(--cream);border-radius:9px;padding:13px;margin-bottom:13px;"><div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span style="font-size:11px;color:var(--text-muted);">Progress</span><strong style="color:var(--gold);">${pct}%</strong></div><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div><div style="display:flex;justify-content:space-between;margin-top:4px;font-size:9px;color:var(--text-muted);"><span>$${(a.totalPledged||0).toLocaleString()} raised</span><span>Goal: $${(a.pledgeGoal||0).toLocaleString()}</span></div></div>${myD.length ? `<hr class="divider"><div style="font-size:12px;font-weight:600;margin-bottom:7px;">Donors (${myD.length})</div>` + myD.map(d => `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:11px;"><span>${d.name||'—'}</span><span style="font-weight:600;color:var(--emerald);">$${(d.pledgeAmount||0).toLocaleString()}</span></div>`).join('') : ''}${downlineHtml}`;
+  openModal('amb-detail-modal');
+}
+
+// ── AMBASSADOR DOWNLINE (Ambassador portal) ──
+let myDownlineCache = [];
+
+async function renderAmbDownline() {
+  const el = document.getElementById('amb-downline-list');
+  if (!el || !currentAmbassadorId) return;
+  const downline = await apiGet('/ambassadors/' + currentAmbassadorId + '/downline');
+  myDownlineCache = downline || [];
+
+  const handoverSelect = document.getElementById('handover-target');
+  if (handoverSelect) {
+    handoverSelect.innerHTML = myDownlineCache.length
+      ? myDownlineCache.map(a => `<option value="${a.id}">${a.name}</option>`).join('')
+      : '<option value="">No one in your network yet</option>';
+  }
+
+  if (!downline || !downline.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">🤝</div><p>No sub-ambassadors yet. Add one above!</p></div>';
+    return;
+  }
+  el.innerHTML = downline.map(a => {
+    const pct = a.pledgeGoal ? Math.min(100, Math.round((a.totalPledged||0) / a.pledgeGoal * 100)) : 0;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);"><div><div style="font-size:12px;font-weight:600;">${a.name}</div><div style="font-size:9px;color:var(--text-muted);">${a.city||''} · ${a.status||'active'}</div></div><div style="text-align:right;"><div style="font-size:11px;font-weight:700;color:var(--emerald);">$${(a.totalPledged||0).toLocaleString()}</div><div style="font-size:9px;color:var(--text-muted);">${pct}% of goal</div></div></div>`;
+  }).join('');
+}
+
+async function addSubAmbassador() {
+  if (!currentAmbassadorId) { toast('Sign in as an ambassador first', 'error'); return; }
+  const fname = document.getElementById('suba-fname').value.trim();
+  const lname = document.getElementById('suba-lname').value.trim();
+  if (!fname || !lname) { toast('Please enter first and last name', 'error'); return; }
+  const code = document.getElementById('suba-code').value.trim().toUpperCase() || fname.toUpperCase().substring(0, 4) + new Date().getFullYear();
+  const body = {
+    name: fname + ' ' + lname,
+    email: document.getElementById('suba-email').value,
+    phone: document.getElementById('suba-phone').value,
+    city: document.getElementById('suba-city').value,
+    code,
+    pledgeGoal: parseFloat(document.getElementById('suba-goal').value) || 10000,
+    totalPledged: 0,
+    status: 'active'
+  };
+  const result = await apiPost('/ambassadors/' + currentAmbassadorId + '/sub-ambassadors', body);
+  if (result) {
+    closeModal('add-sub-ambassador-modal');
+    ['suba-fname','suba-lname','suba-email','suba-phone','suba-city','suba-goal','suba-code'].forEach(id => document.getElementById(id).value = '');
+    await renderAmbDownline();
+    toast('🤝 ' + fname + ' ' + lname + ' added to your network!');
+  }
+}
+
+// ── HANDOVER ──
+async function confirmHandover() {
+  if (!currentAmbassadorId) { toast('Sign in as an ambassador first', 'error'); return; }
+  const targetId = document.getElementById('handover-target').value;
+  if (!targetId) { toast('Choose someone to hand over to', 'error'); return; }
+
+  const target = myDownlineCache.find(a => a.id === targetId);
+  const targetName = target ? target.name : 'them';
+
+  if (!confirm('Are you sure? This will transfer everything to ' + targetName + ' and lock you out of your own account immediately. This cannot be undone.')) {
+    return;
+  }
+
+  const result = await apiPost('/ambassadors/' + currentAmbassadorId + '/handover-to/' + targetId, {});
+  if (result) {
+    toast('Handed everything over to ' + targetName + '. Signing you out...', 'info');
+    closeModal('handover-modal');
+    setTimeout(() => { logout(); }, 1500);
+  }
+}
+
+// ── MESSAGES ──
+function previewTemplate(week) {
+  const a = cachedData.ambassadors[0];
+  if (!a) { toast('No ambassadors yet', 'error'); return; }
+  const name = a.name || a.fname;
+  const t = MSG_TEMPLATES[week - 1];
+  document.getElementById('msg-to').value = a.id;
+  document.getElementById('msg-body').value = t.text(name, a.code);
+  showPage('messages');
+  toast('Template loaded 📋', 'info');
+}
+
+function sendMessage() {
+  const to = document.getElementById('msg-to').value;
+  const body = document.getElementById('msg-body').value.trim();
+  const ch = document.getElementById('msg-channel').value;
+  if (!to || !body) { toast('Select a recipient and write a message', 'error'); return; }
+  const a = cachedData.ambassadors.find(x => x.id === to);
+  const name = a ? (a.name || a.fname) : 'Ambassador';
+  document.getElementById('msg-body').value = '';
+  toast('Message sent to ' + name + ' via ' + ch + ' 📤');
+}
+
+// ── POPULATE SELECTS ──
+function populateAllSelects() {
+  const ambOpts = '<option value="">No ambassador</option>' + cachedData.ambassadors.map(a => `<option value="${a.id}">${a.name||(a.fname+' '+a.lname)}</option>`).join('');
+  const volOpts = '<option value="">Select volunteer...</option>' + cachedData.volunteers.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
+  const cardOpts = cachedData.pledgeCards.map(p => `<option value="${p.id}">${p.donorId||'Card'} — $${p.amount||0} (${p.status})</option>`).join('');
+  ['pc-ambassador','ev-ambassador','donor-ambassador','th-ambassador'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ambOpts; });
+  ['pc-volunteer','cb-volunteer'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = volOpts; });
+  const cl = document.getElementById('cl-card'); if (cl) cl.innerHTML = cardOpts;
+}
+
+// ── UI HELPERS ──
+function togglePaymentFields() {
+  const m = document.getElementById('pc-method').value;
+  document.getElementById('cc-fields').style.display = m === 'credit-card' ? 'block' : 'none';
+  document.getElementById('bank-fields').style.display = m === 'bank' ? 'block' : 'none';
+}
+
+function switchPledgeTab(tab, btn) {
+  document.querySelectorAll('#page-pledgecards .tab-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  else {
+    const tabs = document.querySelectorAll('#page-pledgecards .tab-btn');
+    const idx = { unprocessed: 0, all: 1, new: 2 }[tab];
+    if (tabs[idx]) tabs[idx].classList.add('active');
+  }
+  ['unprocessed', 'all', 'new'].forEach(t => {
+    const el = document.getElementById('pledge-tab-' + t);
+    if (el) el.style.display = t === tab ? 'block' : 'none';
+  });
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); populateAllSelects(); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }));
+
+function generateQRCard() {
+  document.getElementById('qr-prev-org').textContent = document.getElementById('qr-org').value;
+  document.getElementById('qr-prev-tagline').textContent = document.getElementById('qr-tagline').value;
+  document.getElementById('qr-prev-contact').textContent = document.getElementById('qr-contact').value;
+  document.getElementById('qr-prev-goal').textContent = document.getElementById('qr-goal').value;
+  toast('Business card preview updated! 🪪', 'info');
+}
+
+function toast(msg, type = 'success') {
+  const t = document.createElement('div');
+  t.className = 'toast ' + (type === 'error' ? 'error' : type === 'info' ? 'info' : type === 'warning' ? 'warning' : '');
+  t.innerHTML = '<span>' + (type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️') + '</span><span>' + msg + '</span>';
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(() => t.remove(), 4000);
+}
+</script>
+</body>
+</html>
