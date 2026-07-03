@@ -776,6 +776,14 @@ function renderAll() {
   renderCallLog();
   renderCashBoxes();
   populateAllSelects();
+  if (currentRole === 'ambassador' && currentAmbassadorId) {
+    renderAmbEvents();
+    renderAmbTownHalls();
+    renderAmbPledgeCards();
+    const myD = cachedData.donors.filter(d => d.ambassadorId === currentAmbassadorId);
+    renderAmbDonors(myD);
+    renderAmbDownline();
+  }
 }
 
 // ── STATS ──
