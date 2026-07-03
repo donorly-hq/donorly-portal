@@ -5,7 +5,7 @@ substitutions:
   _API_BASE: https://donorly-backend-REPLACE_WITH_HASH-uc.a.run.app/api
 
 steps:
-  # Build the Docker image (pass API base URL as build arg)
+  # Step 0: Build the Docker image
   - name: gcr.io/cloud-builders/docker
     args:
       - build
@@ -16,7 +16,19 @@ steps:
       - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:latest
       - .
 
-  # Deploy to Cloud Run
+  # Step 1: Push commit-sha tag
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$COMMIT_SHA
+
+  # Step 2: Push latest tag
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:latest
+
+  # Step 3: Deploy to Cloud Run
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk
     entrypoint: gcloud
     args:
@@ -32,11 +44,6 @@ steps:
       - --cpu=1
       - --min-instances=0
       - --max-instances=5
-
-# Cloud Build pushes these automatically with full AR auth
-images:
-  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$COMMIT_SHA
-  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:latest
 
 options:
   logging: CLOUD_LOGGING_ONLY
