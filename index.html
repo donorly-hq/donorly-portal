@@ -937,7 +937,7 @@ function renderPledgeCards() {
 function renderFollowups() {
   document.getElementById('followup-list').innerHTML = cachedData.ambassadors.map(a => {
     const name = a.name || ((a.fname||'') + ' ' + (a.lname||''));
-    return `<div class="followup-week active"><div class="week-num active">2</div><div style="flex:1;"><div style="font-weight:700;font-size:12px;">${name}</div><div style="font-size:10px;color:var(--text-muted);">${a.city||''} · Follow-up needed</div><div style="display:flex;gap:5px;margin-top:6px;"><button class="btn btn-primary btn-sm" onclick="toast('Follow-up sent to ${name}!','info')">Send Follow-up</button></div></div></div>`;
+    return `<div class="followup-week active"><div class="week-num active">2</div><div style="flex:1;"><div style="font-weight:700;font-size:12px;">${name}</div><div style="font-size:10px;color:var(--text-muted);">${a.city||''} · Follow-up needed</div><div style="display:flex;gap:5px;margin-top:6px;"><button class="btn btn-primary btn-sm" onclick="toast('Follow-up sent to ${name}!','info')">Send Follow-up</button></div></div></div>${a.status!=='Inactive'?`<button class="btn btn-danger btn-sm" style="margin-top:6px;width:100%;" onclick="deactivateAmbassador('${a.id}','${name}')">Deactivate</button>`:''}`;
   }).join('') || '<div class="empty-state"><div class="empty-icon">🔔</div><p>No ambassadors to follow up with.</p></div>';
 }
 
