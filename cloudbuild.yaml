@@ -2,7 +2,7 @@ substitutions:
   _REGION: us-central1
   _REPO: donorly
   _SERVICE: donorly-portal
-  _API_BASE: https://donorly-backend-REPLACE_WITH_HASH-uc.a.run.app/api
+  _API_BASE: https://donorly-backend-jyiyrqfy5q-uc.a.run.app/api
 
 steps:
   # Step 0: Build the Docker image
