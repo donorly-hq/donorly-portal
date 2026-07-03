@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { AiConversation, AiInsight, AiSettings } from "@/lib/types";
 import {
@@ -46,30 +46,30 @@ export default function InsightsPage() {
   }, [conversations]);
 
   async function loadSettings() {
-    const data = await apiFetch<AiSettings>("/api/ai/settings");
+    const data = await api.get<AiSettings>("/ai/settings");
     if (data) setSettings(data);
   }
 
   async function loadConversations() {
-    const data = await apiFetch<AiConversation[]>("/api/ai/conversations");
+    const data = await api.get<AiConversation[]>("/ai/conversations");
     if (data) setConversations(data.reverse());
   }
 
   async function loadOrgInsight() {
-    const data = await apiFetch<AiInsight>("/api/ai/insights/org");
+    const data = await api.get<AiInsight>("/ai/insights/org");
     if (data) setOrgInsight(data);
   }
 
   async function loadRecentInsights() {
-    const data = await apiFetch<AiInsight[]>("/api/ai/insights");
+    const data = await api.get<AiInsight[]>("/ai/insights");
     if (data) setRecentInsights(data);
   }
 
   async function handleToggleAi() {
     if (!settings) return;
     setTogglingAi(true);
-    const endpoint = settings.enabled ? "/api/ai/settings/disable" : "/api/ai/settings/enable";
-    const data = await apiFetch<AiSettings>(endpoint, { method: "POST" });
+    const endpoint = settings.enabled ? "/ai/settings/disable" : "/ai/settings/enable";
+    const data = await api.post<AiSettings>(endpoint);
     if (data) setSettings(data);
     setTogglingAi(false);
   }
@@ -80,10 +80,7 @@ export default function InsightsPage() {
     setAsking(true);
     const q = question.trim();
     setQuestion("");
-    const data = await apiFetch<AiConversation>("/api/ai/ask", {
-      method: "POST",
-      body: JSON.stringify({ question: q }),
-    });
+    const data = await api.post<AiConversation>("/ai/ask", { question: q });
     if (data) {
       setConversations((prev) => [...prev, data]);
     }
@@ -92,7 +89,7 @@ export default function InsightsPage() {
 
   async function handleGenerateOrgInsight() {
     setGeneratingOrg(true);
-    const data = await apiFetch<AiInsight>("/api/ai/insights/org", { method: "POST" });
+    const data = await api.post<AiInsight>("/ai/insights/org");
     if (data) {
       setOrgInsight(data);
       setRecentInsights((prev) => [data, ...prev]);
