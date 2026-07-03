@@ -46,4 +46,5 @@ steps:
       - --max-instances=5
 
 options:
-  logging: CLOUD_LOGGING_ONLY
+  logging: GCS_ONLY
+  logsBucket: gs://donorly-build-logs-501321
