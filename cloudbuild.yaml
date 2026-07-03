@@ -5,13 +5,6 @@ substitutions:
   _API_BASE: https://donorly-backend-REPLACE_WITH_HASH-uc.a.run.app/api
 
 steps:
-  # Authenticate Docker with Artifact Registry
-  - name: gcr.io/cloud-builders/gcloud
-    args:
-      - auth
-      - configure-docker
-      - us-central1-docker.pkg.dev
-
   # Build the Docker image (pass API base URL as build arg)
   - name: gcr.io/cloud-builders/docker
     args:
@@ -22,17 +15,6 @@ steps:
       - -t
       - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:latest
       - .
-
-  # Push to Artifact Registry
-  - name: gcr.io/cloud-builders/docker
-    args:
-      - push
-      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$COMMIT_SHA
-
-  - name: gcr.io/cloud-builders/docker
-    args:
-      - push
-      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:latest
 
   # Deploy to Cloud Run
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk
@@ -51,9 +33,10 @@ steps:
       - --min-instances=0
       - --max-instances=5
 
+# Cloud Build pushes these automatically with full AR auth
 images:
   - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:$COMMIT_SHA
   - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:latest
 
 options:
-  logging: LEGACY
+  logging: CLOUD_LOGGING_ONLY
