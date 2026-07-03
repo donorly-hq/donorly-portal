@@ -45,6 +45,7 @@ steps:
       - --min-instances=0
       - --max-instances=5
 
+logsBucket: gs://donorly-build-logs-501321
+
 options:
   logging: GCS_ONLY
-  logsBucket: gs://donorly-build-logs-501321
