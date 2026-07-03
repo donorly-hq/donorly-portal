@@ -5,6 +5,13 @@ substitutions:
   _API_BASE: https://donorly-backend-REPLACE_WITH_HASH-uc.a.run.app/api
 
 steps:
+  # Authenticate Docker with Artifact Registry
+  - name: gcr.io/cloud-builders/gcloud
+    args:
+      - auth
+      - configure-docker
+      - us-central1-docker.pkg.dev
+
   # Build the Docker image (pass API base URL as build arg)
   - name: gcr.io/cloud-builders/docker
     args:
@@ -49,4 +56,4 @@ images:
   - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_SERVICE}:latest
 
 options:
-  logging: CLOUD_LOGGING_ONLY
+  logging: LEGACY
