@@ -14,6 +14,8 @@ interface NavItem {
 interface NavGroup {
   heading: string;
   items: NavItem[];
+  /** If true, this group requires an org context — hidden for platform admins */
+  orgScoped?: boolean;
 }
 
 const NAV: NavGroup[] = [
@@ -23,41 +25,48 @@ const NAV: NavGroup[] = [
   },
   {
     heading: "People",
+    orgScoped: true,
     items: [{ label: "Donors", href: "/donors", permission: "donors.read" }],
   },
   {
     heading: "Fundraising",
+    orgScoped: true,
     items: [
-      { label: "Campaigns", href: "/campaigns", permission: "campaigns.read" },
-      { label: "Follow-ups", href: "/follow-ups", permission: "followups.read" },
+      { label: "Campaigns",    href: "/campaigns",    permission: "campaigns.read" },
+      { label: "Follow-ups",   href: "/follow-ups",   permission: "followups.read" },
       { label: "Pledge cards", href: "/pledge-cards", permission: "pledges.read" },
     ],
   },
   {
     heading: "Finance",
+    orgScoped: true,
     items: [
       { label: "Payments", href: "/payments", permission: "payments.manage" },
-      { label: "Reports", href: "/reports", permission: "reports.view" },
+      { label: "Reports",  href: "/reports",  permission: "reports.view" },
     ],
   },
   {
     heading: "Events",
+    orgScoped: true,
     items: [
-      { label: "Events", href: "/events", permission: "events.read" },
+      { label: "Events",    href: "/events",    permission: "events.read" },
       { label: "Townhalls", href: "/townhalls", permission: "townhalls.read" },
       { label: "My shifts", href: "/my-shifts", permission: "volunteers.read" },
     ],
   },
   {
     heading: "Outreach",
+    orgScoped: true,
     items: [{ label: "Communications", href: "/communications", permission: "communications.read" }],
   },
   {
     heading: "AI & Insights",
+    orgScoped: true,
     items: [{ label: "AI Assistant", href: "/insights", permission: "ai.use" }],
   },
   {
     heading: "Administration",
+    orgScoped: true,
     items: [{ label: "Team", href: "/settings/team", permission: "users.manage" }],
   },
   {
@@ -68,7 +77,8 @@ const NAV: NavGroup[] = [
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
-  const { hasPermission } = useAuth();
+  const { session, hasPermission } = useAuth();
+  const isPlatformAdmin = session?.platformAdmin === true;
 
   return (
     <nav className="flex h-full w-64 flex-col bg-emerald-dark text-white/90">
@@ -77,6 +87,9 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       </div>
       <div className="flex-1 space-y-6 overflow-y-auto px-3 pb-6">
         {NAV.map((group) => {
+          // Platform admins have no org context — hide all org-scoped groups
+          if (isPlatformAdmin && group.orgScoped) return null;
+
           const visible = group.items.filter(
             (item) => !item.permission || hasPermission(item.permission),
           );
