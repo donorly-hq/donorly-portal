@@ -1058,52 +1058,5 @@ function CampaignManagerSnapshot({ name, data }: { name: string; data: CampaignM
   );
 }
 
-/* ─── page ─────────────────────────────────────────────────────── */
-export default function DashboardPage() {
-  const { session, hasPermission } = useAuth();
-  const canViewReports = hasPermission("reports.view");
-  const isCampaignManager = session?.roleCode === "campaign_manager";
 
-  const [orgData, setOrgData] = useState<OrgDashboard | null>(null);
-  const [myData, setMyData] = useState<AmbassadorDashboard | null>(null);
-  const [cmData, setCmData] = useState<CampaignManagerDashboard | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (canViewReports && !isCampaignManager) {
-      api.get<OrgDashboard>("/dashboard").then(setOrgData).catch((e) => setError(e.message));
-    } else if (isCampaignManager) {
-      api.get<CampaignManagerDashboard>("/dashboard/campaign-manager").then(setCmData).catch((e) => setError(e.message));
-    } else {
-      api.get<AmbassadorDashboard>("/dashboard/my").then(setMyData).catch((e) => setError(e.message));
-    }
-  }, [canViewReports, isCampaignManager]);
-
-  const roleName = session?.roleCode ? (ROLE_LABELS[session.roleCode] ?? session.roleCode) : "";
-
-  if (error) return <p className="text-red-600 p-4">{error}</p>;
-  if (canViewReports && !isCampaignManager && !orgData) return <Spinner />;
-  if (isCampaignManager && !cmData) return <Spinner />;
-  if (!canViewReports && !isCampaignManager && !myData) return <Spinner />;
-
-  return (
-    <div>
-      <PageHeader
-        title="Dashboard"
-        subtitle={`${roleName} — ${session?.organizationName ?? ""}`}
-      />
-
-      {canViewReports && !isCampaignManager && orgData && (
-        <OrgSnapshot name={session?.fullName ?? ""} data={orgData} />
-      )}
-
-      {isCampaignManager && cmData && (
-        <CampaignManagerSnapshot name={session?.fullName ?? ""} data={cmData} />
-      )}
-
-      {!canViewReports && !isCampaignManager && myData && (
-        <AmbassadorSnapshot name={session?.fullName ?? ""} data={myData} />
-      )}
-    </div>
-  );
-}
