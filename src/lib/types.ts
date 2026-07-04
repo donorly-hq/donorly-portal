@@ -6,6 +6,8 @@ export interface AuthSession {
   organizationId: string | null;
   organizationName: string | null;
   organizationPrimaryColor: string | null;
+  /** Resolved logo for watermark: uploaded base64 data URL or external URL */
+  organizationLogo: string | null;
   roleCode: string | null;
   permissions: string[];
 }
@@ -18,6 +20,7 @@ export interface Organization {
   status: "trial" | "active" | "suspended" | "cancelled";
   timezone: string;
   logoUrl: string | null;
+  logoData: string | null;
   primaryColor: string | null;
   createdAt: string;
   ownerId: string | null;
@@ -31,6 +34,7 @@ export interface OrganizationRequest {
   vertical: string;
   timezone: string;
   logoUrl?: string;
+  logoData?: string;
   primaryColor?: string;
   // owner (only used on create)
   ownerName?: string;

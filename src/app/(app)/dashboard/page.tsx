@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type {
@@ -57,6 +57,28 @@ function slugify(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
+function compressImage(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const MAX = 600;
+      let { naturalWidth: w, naturalHeight: h } = img;
+      if (w > MAX || h > MAX) {
+        if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+        else { w = Math.round(w * MAX / h); h = MAX; }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL("image/jpeg", 0.7));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Failed to load image")); };
+    img.src = url;
+  });
+}
+
 // ─── constants ────────────────────────────────────────────────────────────────
 
 const VERTICALS = [
@@ -76,7 +98,7 @@ const STATUS_TONE: Record<string, "success" | "warning" | "danger" | "neutral"> 
 };
 const EMPTY_FORM: OrganizationRequest = {
   name: "", slug: "", vertical: "nonprofit", timezone: "America/Chicago",
-  logoUrl: "", primaryColor: "#0a4f3f", ownerName: "", ownerEmail: "", ownerPassword: "",
+  logoUrl: "", logoData: undefined, primaryColor: "#0a4f3f", ownerName: "", ownerEmail: "", ownerPassword: "",
 };
 
 // ─── Platform Super Admin Dashboard ───────────────────────────────────────────
@@ -93,6 +115,8 @@ function PlatformAdminDashboard({ name }: { name: string }) {
   const [showPassword, setShowPassword] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [compressing, setCompressing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // status modal
   const [statusOrg, setStatusOrg] = useState<Organization | null>(null);
@@ -120,6 +144,7 @@ function PlatformAdminDashboard({ name }: { name: string }) {
     setForm(EMPTY_FORM);
     setFormError(null);
     setShowPassword(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
     setModalOpen(true);
   }
 
@@ -128,14 +153,33 @@ function PlatformAdminDashboard({ name }: { name: string }) {
     setForm({
       name: org.name, slug: org.slug, vertical: org.vertical,
       timezone: org.timezone, logoUrl: org.logoUrl ?? "",
+      logoData: org.logoData ?? undefined,
       primaryColor: org.primaryColor ?? "#0a4f3f",
     });
     setFormError(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
     setModalOpen(true);
   }
 
   function setField<K extends keyof OrganizationRequest>(key: K, value: OrganizationRequest[K]) {
     setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { setFormError("Image must be smaller than 5 MB"); return; }
+    setCompressing(true);
+    try {
+      const data = await compressImage(file);
+      setField("logoData", data);
+    } catch {
+      setFormError("Could not process image. Please try a different file.");
+    } finally {
+      setCompressing(false);
+    }
+  }
+    setForm((f) => ({ ...f, name: n, slug: editingId ? f.slug : slugify(n) }));
   }
 
   function handleNameChange(n: string) {
@@ -344,8 +388,39 @@ function PlatformAdminDashboard({ name }: { name: string }) {
             </Field>
           </div>
 
+          <Field label="Logo / Watermark Image (optional)">
+            <div className="space-y-2">
+              {form.logoData && (
+                <div className="flex items-center gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={form.logoData} alt="Logo preview" className="h-14 w-14 rounded object-contain border border-black/10 bg-black/5 p-1" />
+                  <button
+                    type="button"
+                    className="text-xs text-red-500 hover:underline"
+                    onClick={() => { setField("logoData", undefined); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                  >
+                    Remove uploaded image
+                  </button>
+                </div>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleLogoUpload}
+                disabled={compressing}
+                className="block w-full text-sm text-black/60 file:mr-3 file:rounded file:border-0 file:bg-black/5 file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-black/10 cursor-pointer"
+              />
+              {compressing && <p className="text-xs text-black/40">Compressing…</p>}
+              <p className="text-xs text-black/40">
+                PNG, JPG or SVG · max 5 MB · auto-compressed · used as sidebar logo &amp; background watermark
+              </p>
+            </div>
+          </Field>
+
           <Field label="Logo URL (optional)">
             <Input type="url" value={form.logoUrl ?? ""} onChange={(e) => setField("logoUrl", e.target.value)} placeholder="https://example.com/logo.png" />
+            <p className="text-xs text-black/40 mt-1">Used as fallback when no image is uploaded above.</p>
           </Field>
 
           <Field label="Primary Color (optional)">
