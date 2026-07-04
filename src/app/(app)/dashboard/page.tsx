@@ -179,8 +179,6 @@ function PlatformAdminDashboard({ name }: { name: string }) {
       setCompressing(false);
     }
   }
-    setForm((f) => ({ ...f, name: n, slug: editingId ? f.slug : slugify(n) }));
-  }
 
   function handleNameChange(n: string) {
     setForm((f) => ({ ...f, name: n, slug: editingId ? f.slug : slugify(n) }));
