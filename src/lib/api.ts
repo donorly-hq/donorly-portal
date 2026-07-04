@@ -1,9 +1,8 @@
 import { clearSession, loadSession } from "./session";
 
-// All API calls go through the Next.js proxy rewrite (/backend → Spring Boot).
-// In development this hits localhost:8080 via next.config.mjs rewrites.
-// In production Cloud Run sets BACKEND_URL at runtime — no baked-in URL needed.
-const API_BASE = "/backend";
+// All API calls go through the Next.js proxy route at /api/* (server-side).
+// The proxy forwards requests to BACKEND_URL at runtime — no baked-in URLs.
+const API_BASE = "/api";
 
 export class ApiError extends Error {
   status: number;
