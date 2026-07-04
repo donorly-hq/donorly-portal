@@ -11,39 +11,85 @@ import {
 } from "react";
 import { api } from "./api";
 import { clearSession, loadSession, saveSession } from "./session";
-import type { AuthSession } from "./types";
+import type { AuthSession, LoginResponse, MeResponse } from "./types";
+
+export interface LoginResult {
+  otpRequired: boolean;
+  challengeId?: string;
+}
 
 interface AuthContextValue {
   session: AuthSession | null;
   loading: boolean;
-  login: (email: string, password: string, organizationSlug?: string) => Promise<void>;
+  login: (email: string, password: string, organizationSlug?: string) => Promise<LoginResult>;
+  verifyOtp: (challengeId: string, code: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshBranding: () => Promise<void>;
   hasPermission: (permission: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+async function mergeMeIntoSession(base: AuthSession): Promise<AuthSession> {
+  try {
+    const me = await api.get<MeResponse>("/auth/me");
+    return {
+      ...base,
+      userId: me.userId,
+      fullName: me.fullName,
+      platformAdmin: me.platformAdmin,
+      organizationId: me.organizationId,
+      organizationName: me.organizationName,
+      organizationPrimaryColor: me.organizationPrimaryColor,
+      organizationLogo: me.organizationLogo,
+      roleCode: me.roleCode,
+      permissions: me.permissions,
+    };
+  } catch {
+    return base;
+  }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setSession(loadSession());
-    setLoading(false);
+    const stored = loadSession();
+    if (!stored) {
+      setLoading(false);
+      return;
+    }
+    mergeMeIntoSession(stored)
+      .then((merged) => {
+        saveSession(merged);
+        setSession(merged);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const login = useCallback(
-    async (email: string, password: string, organizationSlug?: string) => {
-      const result = await api.post<AuthSession>(
+    async (email: string, password: string, organizationSlug?: string): Promise<LoginResult> => {
+      const result = await api.post<LoginResponse>(
         "/auth/login",
         { email, password, organizationSlug: organizationSlug || undefined },
         false,
       );
+      if (result.otpRequired) {
+        return { otpRequired: true, challengeId: result.challengeId ?? undefined };
+      }
       saveSession(result);
       setSession(result);
+      return { otpRequired: false };
     },
     [],
   );
+
+  const verifyOtp = useCallback(async (challengeId: string, code: string) => {
+    const result = await api.post<LoginResponse>("/auth/verify-otp", { challengeId, code }, false);
+    saveSession(result);
+    setSession(result);
+  }, []);
 
   const logout = useCallback(async () => {
     try {
@@ -53,6 +99,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     clearSession();
     setSession(null);
+  }, []);
+
+  const refreshBranding = useCallback(async () => {
+    const stored = loadSession();
+    if (!stored) return;
+    const merged = await mergeMeIntoSession(stored);
+    saveSession(merged);
+    setSession(merged);
   }, []);
 
   const hasPermission = useCallback(
@@ -65,8 +119,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ session, loading, login, logout, hasPermission }),
-    [session, loading, login, logout, hasPermission],
+    () => ({ session, loading, login, verifyOtp, logout, refreshBranding, hasPermission }),
+    [session, loading, login, verifyOtp, logout, refreshBranding, hasPermission],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

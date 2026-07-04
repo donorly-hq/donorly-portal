@@ -6,10 +6,16 @@ export interface AuthSession {
   organizationId: string | null;
   organizationName: string | null;
   organizationPrimaryColor: string | null;
-  /** Resolved logo for watermark: uploaded base64 data URL or external URL */
+  /** Resolved logo URL path (`/api/organizations/{id}/logo`) or external/GCS URL — never base64 */
   organizationLogo: string | null;
   roleCode: string | null;
   permissions: string[];
+}
+
+/** Login can either complete immediately or require an emailed one-time code. */
+export interface LoginResponse extends AuthSession {
+  otpRequired?: boolean;
+  challengeId?: string | null;
 }
 
 export interface Organization {
@@ -20,12 +26,27 @@ export interface Organization {
   status: "trial" | "active" | "suspended" | "cancelled";
   timezone: string;
   logoUrl: string | null;
-  logoData: string | null;
+  hasLogo: boolean;
   primaryColor: string | null;
   createdAt: string;
   ownerId: string | null;
   ownerName: string | null;
   ownerEmail: string | null;
+}
+
+/** Platform org list — same shape as Organization (no logo payload). */
+export type OrganizationSummary = Organization;
+
+export interface MeResponse {
+  userId: string;
+  fullName: string;
+  platformAdmin: boolean;
+  organizationId: string | null;
+  organizationName: string | null;
+  organizationPrimaryColor: string | null;
+  organizationLogo: string | null;
+  roleCode: string | null;
+  permissions: string[];
 }
 
 export interface OrganizationRequest {

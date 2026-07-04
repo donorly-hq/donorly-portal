@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import type { Organization, OrganizationRequest, OrgMemberSummary } from "@/lib/types";
 import {
   Badge,
@@ -76,6 +77,7 @@ const EMPTY_FORM: OrganizationRequest = {
 // ─── page ─────────────────────────────────────────────────────────────────────
 
 export default function PlatformOrganizationsPage() {
+  const { session, refreshBranding } = useAuth();
   const [orgs, setOrgs] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -147,7 +149,7 @@ export default function PlatformOrganizationsPage() {
     setForm({
       name: org.name, slug: org.slug, vertical: org.vertical,
       timezone: org.timezone, logoUrl: org.logoUrl ?? "",
-      logoData: org.logoData ?? undefined,
+      logoData: undefined,
       primaryColor: org.primaryColor ?? "#0a4f3f",
     });
     setFormError(null);
@@ -200,6 +202,9 @@ export default function PlatformOrganizationsPage() {
       if (editingId) {
         const updated = await api.put<Organization>(`/organizations/${editingId}`, payload);
         setOrgs((prev) => prev.map((o) => (o.id === editingId ? updated : o)));
+        if (editingId === session?.organizationId) {
+          await refreshBranding();
+        }
       } else {
         const created = await api.post<Organization>("/organizations", payload);
         setOrgs((prev) => [...prev, created]);
@@ -400,18 +405,23 @@ export default function PlatformOrganizationsPage() {
 
           <Field label="Logo / Watermark Image (optional)">
             <div className="space-y-2">
-              {/* Uploaded image preview */}
-              {form.logoData && (
+              {(form.logoData || (editingId && orgs.find((o) => o.id === editingId)?.hasLogo)) && (
                 <div className="flex items-center gap-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={form.logoData} alt="Logo preview" className="h-14 w-14 rounded object-contain border border-black/10 bg-black/5 p-1" />
-                  <button
-                    type="button"
-                    className="text-xs text-red-500 hover:underline"
-                    onClick={() => { set("logoData", undefined); if (fileInputRef.current) fileInputRef.current.value = ""; }}
-                  >
-                    Remove uploaded image
-                  </button>
+                  <img
+                    src={form.logoData ?? `/api/organizations/${editingId}/logo`}
+                    alt="Logo preview"
+                    className="h-14 w-14 rounded object-contain border border-black/10 bg-black/5 p-1"
+                  />
+                  {form.logoData && (
+                    <button
+                      type="button"
+                      className="text-xs text-red-500 hover:underline"
+                      onClick={() => { set("logoData", undefined); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                    >
+                      Clear new upload
+                    </button>
+                  )}
                 </div>
               )}
               <input
