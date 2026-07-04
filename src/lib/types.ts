@@ -42,6 +42,15 @@ export interface OrganizationRequest {
   ownerPassword?: string;
 }
 
+export interface OrgMemberSummary {
+  userId: string;
+  fullName: string;
+  email: string;
+  roleCode: string | null;
+  roleName: string | null;
+  status: string;
+}
+
 export interface Donor {
   id: string;
   organizationId: string;

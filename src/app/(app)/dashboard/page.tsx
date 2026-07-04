@@ -9,6 +9,7 @@ import type {
   OrgDashboard,
   Organization,
   OrganizationRequest,
+  OrgMemberSummary,
 } from "@/lib/types";
 import {
   Badge,
@@ -125,10 +126,32 @@ function PlatformAdminDashboard({ name }: { name: string }) {
 
   // set owner modal
   const [ownerOrg, setOwnerOrg] = useState<Organization | null>(null);
+  const [ownerMode, setOwnerMode] = useState<"promote" | "new">("promote");
+  const [orgMembers, setOrgMembers] = useState<OrgMemberSummary[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(false);
+  const [promoteUserId, setPromoteUserId] = useState("");
   const [ownerForm, setOwnerForm] = useState({ ownerName: "", ownerEmail: "", ownerPassword: "" });
   const [showOwnerPassword, setShowOwnerPassword] = useState(false);
   const [savingOwner, setSavingOwner] = useState(false);
   const [ownerError, setOwnerError] = useState<string | null>(null);
+
+  function openOwnerModal(org: Organization) {
+    setOwnerOrg(org);
+    setOwnerMode("promote");
+    setOwnerForm({ ownerName: "", ownerEmail: "", ownerPassword: "" });
+    setPromoteUserId("");
+    setOwnerError(null);
+    setShowOwnerPassword(false);
+    setLoadingMembers(true);
+    api.get<OrgMemberSummary[]>(`/organizations/${org.id}/members`)
+      .then((members) => {
+        setOrgMembers(members);
+        const firstNonOwner = members.find((m) => m.roleCode !== "organization_owner");
+        setPromoteUserId(firstNonOwner?.userId ?? members[0]?.userId ?? "");
+      })
+      .catch((e) => setOwnerError(e.message))
+      .finally(() => setLoadingMembers(false));
+  }
 
   function load() {
     setLoading(true);
@@ -220,11 +243,35 @@ function PlatformAdminDashboard({ name }: { name: string }) {
     setSavingOwner(true);
     setOwnerError(null);
     try {
-      const updated = await api.put<Organization>(`/organizations/${ownerOrg.id}/owner`, ownerForm);
+      const payload = {
+        ownerName: ownerForm.ownerName,
+        ownerEmail: ownerForm.ownerEmail,
+        ownerPassword: ownerForm.ownerPassword || undefined,
+      };
+      const updated = await api.put<Organization>(`/organizations/${ownerOrg.id}/owner`, payload);
       setOrgs((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
       setOwnerOrg(null);
     } catch (e: unknown) {
       setOwnerError(e instanceof Error ? e.message : "Failed to set owner");
+    } finally {
+      setSavingOwner(false);
+    }
+  }
+
+  async function handlePromoteOwner(e: React.FormEvent) {
+    e.preventDefault();
+    if (!ownerOrg || !promoteUserId) return;
+    setSavingOwner(true);
+    setOwnerError(null);
+    try {
+      const updated = await api.put<Organization>(
+        `/organizations/${ownerOrg.id}/owner/${promoteUserId}`,
+        {},
+      );
+      setOrgs((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+      setOwnerOrg(null);
+    } catch (e: unknown) {
+      setOwnerError(e instanceof Error ? e.message : "Failed to promote owner");
     } finally {
       setSavingOwner(false);
     }
@@ -330,14 +377,9 @@ function PlatformAdminDashboard({ name }: { name: string }) {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          setOwnerOrg(org);
-                          setOwnerForm({ ownerName: "", ownerEmail: "", ownerPassword: "" });
-                          setOwnerError(null);
-                          setShowOwnerPassword(false);
-                        }}
+                        onClick={() => openOwnerModal(org)}
                       >
-                        {org.ownerName ? "Replace Owner" : "Set Owner"}
+                        {org.ownerName ? "Transfer Owner" : "Set Owner"}
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => openEdit(org)}>Edit</Button>
                     </div>
@@ -476,44 +518,94 @@ function PlatformAdminDashboard({ name }: { name: string }) {
       {/* ── Set Owner modal ───────────────────────────────────────────────── */}
       <Modal
         open={!!ownerOrg}
-        title={ownerOrg?.ownerName ? `Replace Owner — ${ownerOrg.name}` : `Set Owner — ${ownerOrg?.name}`}
+        title={ownerOrg?.ownerName ? `Transfer Owner — ${ownerOrg.name}` : `Set Owner — ${ownerOrg?.name}`}
         onClose={() => setOwnerOrg(null)}
       >
         {ownerOrg && (
-          <form onSubmit={handleSetOwner} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4">
             {ownerOrg.ownerName && (
               <div className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">
-                Current owner: <strong>{ownerOrg.ownerName}</strong> ({ownerOrg.ownerEmail}). Setting a new owner will deactivate their access.
+                Current owner: <strong>{ownerOrg.ownerName}</strong> ({ownerOrg.ownerEmail}).
+                They will be demoted to <strong>Organization Admin</strong> and keep access.
               </div>
             )}
-            <Field label="Full Name *">
-              <Input required value={ownerForm.ownerName} onChange={(e) => setOwnerForm((f) => ({ ...f, ownerName: e.target.value }))} placeholder="e.g. Dr. Ahmed Khan" />
-            </Field>
-            <Field label="Email Address *">
-              <Input required type="email" value={ownerForm.ownerEmail} onChange={(e) => setOwnerForm((f) => ({ ...f, ownerEmail: e.target.value }))} placeholder="e.g. ahmed@hayatclinic.org" />
-            </Field>
-            <Field label="Password *">
-              <div className="relative">
-                <Input
-                  required
-                  type={showOwnerPassword ? "text" : "password"}
-                  value={ownerForm.ownerPassword}
-                  onChange={(e) => setOwnerForm((f) => ({ ...f, ownerPassword: e.target.value }))}
-                  placeholder="Minimum 8 characters"
-                  minLength={8}
-                  className="pr-16"
-                />
-                <button type="button" onClick={() => setShowOwnerPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-black/40 hover:text-black">
-                  {showOwnerPassword ? "Hide" : "Show"}
-                </button>
-              </div>
-            </Field>
-            {ownerError && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{ownerError}</p>}
-            <div className="flex justify-end gap-3">
-              <Button variant="secondary" type="button" onClick={() => setOwnerOrg(null)}>Cancel</Button>
-              <Button type="submit" loading={savingOwner}>Create Owner Account</Button>
+
+            <div className="flex gap-2 border-b border-black/10 pb-2">
+              <button
+                type="button"
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium ${ownerMode === "promote" ? "bg-emerald/10 text-emerald" : "text-black/50 hover:bg-black/5"}`}
+                onClick={() => setOwnerMode("promote")}
+              >
+                Promote member
+              </button>
+              <button
+                type="button"
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium ${ownerMode === "new" ? "bg-emerald/10 text-emerald" : "text-black/50 hover:bg-black/5"}`}
+                onClick={() => setOwnerMode("new")}
+              >
+                New account
+              </button>
             </div>
-          </form>
+
+            {ownerMode === "promote" ? (
+              <form onSubmit={handlePromoteOwner} className="flex flex-col gap-4">
+                <Field label="Select team member *">
+                  {loadingMembers ? (
+                    <p className="text-sm text-black/40">Loading members…</p>
+                  ) : orgMembers.length === 0 ? (
+                    <p className="text-sm text-black/40">No active members yet. Use &quot;New account&quot; to create an owner.</p>
+                  ) : (
+                    <Select required value={promoteUserId} onChange={(e) => setPromoteUserId(e.target.value)}>
+                      {orgMembers.map((m) => (
+                        <option key={m.userId} value={m.userId}>
+                          {m.fullName} ({m.email}) — {m.roleName ?? m.roleCode}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                </Field>
+                {ownerError && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{ownerError}</p>}
+                <div className="flex justify-end gap-3">
+                  <Button variant="secondary" type="button" onClick={() => setOwnerOrg(null)}>Cancel</Button>
+                  <Button type="submit" loading={savingOwner} disabled={!promoteUserId || orgMembers.length === 0}>
+                    Promote to Owner
+                  </Button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleSetOwner} className="flex flex-col gap-4">
+                <p className="text-xs text-black/40">
+                  Creates a new login or links an existing Donorly account by email. Password is only required for new accounts.
+                </p>
+                <Field label="Full Name *">
+                  <Input required value={ownerForm.ownerName} onChange={(e) => setOwnerForm((f) => ({ ...f, ownerName: e.target.value }))} placeholder="e.g. Dr. Ahmed Khan" />
+                </Field>
+                <Field label="Email Address *">
+                  <Input required type="email" value={ownerForm.ownerEmail} onChange={(e) => setOwnerForm((f) => ({ ...f, ownerEmail: e.target.value }))} placeholder="e.g. ahmed@hayatclinic.org" />
+                </Field>
+                <Field label="Password (new accounts only)">
+                  <div className="relative">
+                    <Input
+                      type={showOwnerPassword ? "text" : "password"}
+                      value={ownerForm.ownerPassword}
+                      onChange={(e) => setOwnerForm((f) => ({ ...f, ownerPassword: e.target.value }))}
+                      placeholder="Minimum 8 characters"
+                      minLength={8}
+                      className="pr-16"
+                    />
+                    <button type="button" onClick={() => setShowOwnerPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-black/40 hover:text-black">
+                      {showOwnerPassword ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                </Field>
+                {ownerError && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{ownerError}</p>}
+                <div className="flex justify-end gap-3">
+                  <Button variant="secondary" type="button" onClick={() => setOwnerOrg(null)}>Cancel</Button>
+                  <Button type="submit" loading={savingOwner}>Assign Owner</Button>
+                </div>
+              </form>
+            )}
+          </div>
         )}
       </Modal>
 
