@@ -19,7 +19,10 @@ async function proxy(
 
   const forwardHeaders = new Headers();
   req.headers.forEach((value, key) => {
-    if (!["host", "connection", "transfer-encoding"].includes(key.toLowerCase())) {
+    // Strip browser-specific headers — this is a server-to-server call
+    // so Origin/Referer/Host must not be forwarded (they'd trigger CORS rejection)
+    const skip = ["host", "connection", "transfer-encoding", "origin", "referer"];
+    if (!skip.includes(key.toLowerCase())) {
       forwardHeaders.set(key, value);
     }
   });
