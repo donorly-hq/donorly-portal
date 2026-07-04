@@ -76,7 +76,7 @@ const STATUS_TONE: Record<string, "success" | "warning" | "danger" | "neutral"> 
 };
 const EMPTY_FORM: OrganizationRequest = {
   name: "", slug: "", vertical: "nonprofit", timezone: "America/Chicago",
-  logoUrl: "", primaryColor: "", ownerName: "", ownerEmail: "", ownerPassword: "",
+  logoUrl: "", primaryColor: "#0a4f3f", ownerName: "", ownerEmail: "", ownerPassword: "",
 };
 
 // ─── Platform Super Admin Dashboard ───────────────────────────────────────────
@@ -128,7 +128,7 @@ function PlatformAdminDashboard({ name }: { name: string }) {
     setForm({
       name: org.name, slug: org.slug, vertical: org.vertical,
       timezone: org.timezone, logoUrl: org.logoUrl ?? "",
-      primaryColor: org.primaryColor ?? "",
+      primaryColor: org.primaryColor ?? "#0a4f3f",
     });
     setFormError(null);
     setModalOpen(true);
@@ -356,7 +356,7 @@ function PlatformAdminDashboard({ name }: { name: string }) {
                 onChange={(e) => setField("primaryColor", e.target.value)}
                 className="h-9 w-12 cursor-pointer rounded border border-black/15 p-0.5"
               />
-              <Input value={form.primaryColor ?? ""} onChange={(e) => setField("primaryColor", e.target.value)} placeholder="#0a4f3f" className="flex-1" />
+              <Input value={form.primaryColor || ""} onChange={(e) => setField("primaryColor", e.target.value)} placeholder="#0a4f3f" className="flex-1" />
             </div>
           </Field>
 

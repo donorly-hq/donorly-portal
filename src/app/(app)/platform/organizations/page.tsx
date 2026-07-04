@@ -46,7 +46,7 @@ function slugify(name: string) {
 
 const EMPTY_FORM: OrganizationRequest = {
   name: "", slug: "", vertical: "nonprofit", timezone: "America/Chicago",
-  logoUrl: "", primaryColor: "",
+  logoUrl: "", primaryColor: "#0a4f3f",
   ownerName: "", ownerEmail: "", ownerPassword: "",
 };
 
@@ -99,7 +99,7 @@ export default function PlatformOrganizationsPage() {
     setForm({
       name: org.name, slug: org.slug, vertical: org.vertical,
       timezone: org.timezone, logoUrl: org.logoUrl ?? "",
-      primaryColor: org.primaryColor ?? "",
+      primaryColor: org.primaryColor ?? "#0a4f3f",
     });
     setFormError(null);
     setModalOpen(true);
@@ -329,7 +329,7 @@ export default function PlatformOrganizationsPage() {
                 className="h-9 w-12 cursor-pointer rounded border border-black/15 p-0.5"
               />
               <Input
-                value={form.primaryColor ?? ""}
+                value={form.primaryColor || ""}
                 onChange={(e) => set("primaryColor", e.target.value)}
                 placeholder="#0a4f3f"
                 className="flex-1"

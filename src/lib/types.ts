@@ -5,6 +5,7 @@ export interface AuthSession {
   platformAdmin: boolean;
   organizationId: string | null;
   organizationName: string | null;
+  organizationPrimaryColor: string | null;
   roleCode: string | null;
   permissions: string[];
 }

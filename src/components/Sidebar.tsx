@@ -80,8 +80,14 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { session, hasPermission } = useAuth();
   const isPlatformAdmin = session?.platformAdmin === true;
 
+  // Use org-specific primary color when available, fall back to brand default
+  const sidebarBg = session?.organizationPrimaryColor || "#083a2e";
+
   return (
-    <nav className="flex h-full w-64 flex-col bg-emerald-dark text-white/90">
+    <nav
+      className="flex h-full w-64 flex-col text-white/90"
+      style={{ backgroundColor: sidebarBg }}
+    >
       <div className="px-6 py-5">
         <span className="font-serif text-2xl font-bold text-white">Donorly</span>
       </div>
