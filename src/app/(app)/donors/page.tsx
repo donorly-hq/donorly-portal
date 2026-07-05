@@ -4,7 +4,15 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import type { Assignment, Donor, PageResponse, TeamMember } from "@/lib/types";
+import type {
+  Assignment,
+  Donor,
+  DonorImportResult,
+  DonorImportRow,
+  DuplicateGroup,
+  PageResponse,
+  TeamMember,
+} from "@/lib/types";
 import {
   Badge,
   Button,
@@ -20,6 +28,69 @@ import {
 
 const emptyForm = { fullName: "", email: "", phone: "", city: "", donorType: "individual" };
 const PAGE_SIZE = 50;
+
+/** Minimal CSV parser handling quoted fields, CRLF, and escaped quotes. */
+function parseCsv(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let cell = "";
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') { cell += '"'; i++; }
+        else inQuotes = false;
+      } else cell += ch;
+    } else if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === ",") {
+      row.push(cell); cell = "";
+    } else if (ch === "\n" || ch === "\r") {
+      if (ch === "\r" && text[i + 1] === "\n") i++;
+      row.push(cell); cell = "";
+      if (row.some((c) => c.trim() !== "")) rows.push(row);
+      row = [];
+    } else {
+      cell += ch;
+    }
+  }
+  row.push(cell);
+  if (row.some((c) => c.trim() !== "")) rows.push(row);
+  return rows;
+}
+
+/** Maps arbitrary CSV headers to donor fields (name/email/phone/city/type). */
+function mapCsvToDonors(rows: string[][]): { donors: DonorImportRow[]; problems: string[] } {
+  if (rows.length < 2) return { donors: [], problems: ["File needs a header row and at least one data row."] };
+  const headers = rows[0].map((h) => h.trim().toLowerCase());
+  const col = (...keys: string[]) =>
+    headers.findIndex((h) => keys.some((k) => h.includes(k)));
+  const nameIdx = col("name");
+  const emailIdx = col("email", "e-mail");
+  const phoneIdx = col("phone", "mobile", "cell");
+  const cityIdx = col("city", "town");
+  const typeIdx = col("type");
+  if (nameIdx === -1) return { donors: [], problems: ["Could not find a name column in the header row."] };
+
+  const donors: DonorImportRow[] = [];
+  const problems: string[] = [];
+  rows.slice(1).forEach((r, i) => {
+    const fullName = (r[nameIdx] ?? "").trim();
+    if (!fullName) {
+      problems.push(`Row ${i + 2}: missing name — skipped`);
+      return;
+    }
+    donors.push({
+      fullName,
+      email: emailIdx >= 0 ? (r[emailIdx] ?? "").trim() || undefined : undefined,
+      phone: phoneIdx >= 0 ? (r[phoneIdx] ?? "").trim() || undefined : undefined,
+      city: cityIdx >= 0 ? (r[cityIdx] ?? "").trim() || undefined : undefined,
+      donorType: typeIdx >= 0 ? (r[typeIdx] ?? "").trim() || undefined : undefined,
+    });
+  });
+  return { donors, problems };
+}
 
 export default function DonorsPage() {
   const { hasPermission } = useAuth();
@@ -40,6 +111,20 @@ export default function DonorsPage() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [assignable, setAssignable] = useState<TeamMember[]>([]);
   const [selectedAmbassador, setSelectedAmbassador] = useState("");
+
+  // import
+  const [importOpen, setImportOpen] = useState(false);
+  const [importRows, setImportRows] = useState<DonorImportRow[]>([]);
+  const [importProblems, setImportProblems] = useState<string[]>([]);
+  const [importResult, setImportResult] = useState<DonorImportResult | null>(null);
+  const [importing, setImporting] = useState(false);
+
+  // duplicates
+  const [dupOpen, setDupOpen] = useState(false);
+  const [dupGroups, setDupGroups] = useState<DuplicateGroup[] | null>(null);
+  const [dupKeep, setDupKeep] = useState<Record<number, string>>({});
+  const [merging, setMerging] = useState<number | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -115,6 +200,87 @@ export default function DonorsPage() {
     load();
   };
 
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      await api.download("/export/donors", "donors.csv");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Export failed");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const openImport = () => {
+    setImportRows([]);
+    setImportProblems([]);
+    setImportResult(null);
+    setImportOpen(true);
+  };
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const text = await file.text();
+    const { donors: rows, problems } = mapCsvToDonors(parseCsv(text));
+    setImportRows(rows);
+    setImportProblems(problems);
+    setImportResult(null);
+  };
+
+  const handleImportSubmit = async () => {
+    if (importRows.length === 0) return;
+    setImporting(true);
+    try {
+      const result = await api.post<DonorImportResult>("/donors/import", {
+        donors: importRows.slice(0, 1000),
+      });
+      setImportResult(result);
+      setImportRows([]);
+      load();
+    } catch (e) {
+      setImportProblems([e instanceof Error ? e.message : "Import failed"]);
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const openDuplicates = async () => {
+    setDupOpen(true);
+    setDupGroups(null);
+    setDupKeep({});
+    try {
+      const groups = await api.get<DuplicateGroup[]>("/donors/duplicates");
+      setDupGroups(groups);
+      const initial: Record<number, string> = {};
+      groups.forEach((g, i) => { initial[i] = g.donors[0]?.id ?? ""; });
+      setDupKeep(initial);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load duplicates");
+      setDupGroups([]);
+    }
+  };
+
+  const handleMerge = async (groupIdx: number) => {
+    if (!dupGroups) return;
+    const group = dupGroups[groupIdx];
+    const keepId = dupKeep[groupIdx];
+    if (!keepId) return;
+    const mergeIds = group.donors.map((d) => d.id).filter((id) => id !== keepId);
+    if (mergeIds.length === 0) return;
+    if (!confirm(`Merge ${mergeIds.length} duplicate record(s) into the selected donor? Their pledges, payments, and history move to the kept donor.`)) return;
+    setMerging(groupIdx);
+    try {
+      await api.post("/donors/merge", { keepId, mergeIds });
+      setDupGroups((prev) => prev ? prev.filter((_, i) => i !== groupIdx) : prev);
+      load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Merge failed");
+    } finally {
+      setMerging(null);
+    }
+  };
+
   if (error && !pageData) return <p className="text-red-600">{error}</p>;
   if (!pageData) return <Spinner />;
 
@@ -127,7 +293,20 @@ export default function DonorsPage() {
         title="Donors"
         subtitle={`${totalItems} donor${totalItems === 1 ? "" : "s"}`}
         action={
-          canWrite ? <Button onClick={() => setModalOpen(true)}>Add donor</Button> : undefined
+          <div className="flex flex-wrap gap-2">
+            {hasPermission("donors.export") ? (
+              <Button variant="secondary" onClick={handleExport} disabled={exporting}>
+                {exporting ? "Exporting..." : "Export CSV"}
+              </Button>
+            ) : null}
+            {canWrite ? (
+              <Button variant="secondary" onClick={openImport}>Import CSV</Button>
+            ) : null}
+            {canWrite ? (
+              <Button variant="secondary" onClick={openDuplicates}>Find duplicates</Button>
+            ) : null}
+            {canWrite ? <Button onClick={() => setModalOpen(true)}>Add donor</Button> : null}
+          </div>
         }
       />
 
@@ -327,6 +506,132 @@ export default function DonorsPage() {
             </div>
             <Button type="button" onClick={addAssignment} disabled={!selectedAmbassador}>
               Add
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal open={importOpen} title="Import donors from CSV" onClose={() => setImportOpen(false)}>
+        <div className="space-y-4">
+          <p className="text-sm text-black/60">
+            Upload a CSV with a header row. Columns are matched by name — it needs a
+            <strong> name</strong> column; <strong>email</strong>, <strong>phone</strong>,{" "}
+            <strong>city</strong>, and <strong>type</strong> are optional. Existing donors
+            (same email, or same name and phone) are skipped automatically.
+          </p>
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            onChange={handleImportFile}
+            className="block w-full text-sm text-black/60 file:mr-3 file:rounded file:border-0 file:bg-black/5 file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-black/10 cursor-pointer"
+          />
+          {importProblems.length > 0 ? (
+            <div className="max-h-32 overflow-y-auto rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+              {importProblems.map((p, i) => (
+                <p key={i}>{p}</p>
+              ))}
+            </div>
+          ) : null}
+          {importRows.length > 0 ? (
+            <p className="text-sm">
+              Ready to import <strong>{importRows.length}</strong> donor
+              {importRows.length === 1 ? "" : "s"}
+              {importRows.length > 1000 ? " (first 1,000 will be imported)" : ""}.
+            </p>
+          ) : null}
+          {importResult ? (
+            <div className="rounded-lg bg-emerald/10 px-3 py-2 text-sm">
+              <p>
+                Imported <strong>{importResult.imported}</strong>, skipped{" "}
+                <strong>{importResult.skipped}</strong> duplicate
+                {importResult.skipped === 1 ? "" : "s"}.
+              </p>
+              {importResult.errors.length > 0 ? (
+                <div className="mt-1 max-h-24 overflow-y-auto text-xs text-red-600">
+                  {importResult.errors.map((e, i) => (
+                    <p key={i}>{e}</p>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={() => setImportOpen(false)}>
+              {importResult ? "Close" : "Cancel"}
+            </Button>
+            <Button
+              type="button"
+              onClick={handleImportSubmit}
+              disabled={importing || importRows.length === 0}
+            >
+              {importing ? "Importing..." : "Import"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal open={dupOpen} title="Possible duplicate donors" onClose={() => setDupOpen(false)}>
+        <div className="space-y-4">
+          {dupGroups === null ? (
+            <Spinner />
+          ) : dupGroups.length === 0 ? (
+            <p className="text-sm text-black/50">
+              No potential duplicates found. Donors are compared by phone number and by
+              normalized name.
+            </p>
+          ) : (
+            <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1">
+              {dupGroups.map((group, gi) => (
+                <div key={gi} className="rounded-lg border border-black/10 p-3">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-black/40">
+                    {group.reason}
+                  </p>
+                  <div className="space-y-1">
+                    {group.donors.map((d) => (
+                      <label
+                        key={d.id}
+                        className="flex items-center gap-2 rounded px-2 py-1 text-sm hover:bg-black/5"
+                      >
+                        <input
+                          type="radio"
+                          name={`dup-${gi}`}
+                          checked={dupKeep[gi] === d.id}
+                          onChange={() => setDupKeep((prev) => ({ ...prev, [gi]: d.id }))}
+                        />
+                        <span className="font-medium">{d.fullName}</span>
+                        <span className="text-black/40">
+                          {d.email ?? "no email"} · {d.phone ?? "no phone"} ·{" "}
+                          {currency(d.lifetimeGiving)}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-xs text-black/40">
+                    The selected donor is kept; the others&apos; pledges, payments, notes, and
+                    history move to it.
+                  </p>
+                  {canDelete ? (
+                    <div className="mt-2 flex justify-end">
+                      <Button
+                        type="button"
+                        onClick={() => handleMerge(gi)}
+                        disabled={merging === gi}
+                      >
+                        {merging === gi ? "Merging..." : "Merge into selected"}
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-xs text-black/40">
+                      You need the delete permission to merge donors.
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex justify-end">
+            <Button type="button" variant="secondary" onClick={() => setDupOpen(false)}>
+              Close
             </Button>
           </div>
         </div>

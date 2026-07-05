@@ -23,11 +23,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden print:block print:h-auto print:overflow-visible">
       {/* Org logo watermark — fixed, behind all content */}
       {session.organizationLogo && (
         <div
-          className="fixed inset-0 pointer-events-none select-none"
+          className="fixed inset-0 pointer-events-none select-none print:hidden"
           style={{
             backgroundImage: `url(${session.organizationLogo})`,
             backgroundRepeat: "no-repeat",
@@ -41,7 +41,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         />
       )}
 
-      <div className="hidden lg:block relative z-10">
+      <div className="hidden lg:block relative z-10 print:hidden">
         <Sidebar />
       </div>
 
@@ -54,9 +54,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       ) : null}
 
-      <div className="flex flex-1 flex-col overflow-hidden relative z-10">
-        <Topbar onMenu={() => setDrawerOpen(true)} />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+      <div className="flex flex-1 flex-col overflow-hidden relative z-10 print:block print:overflow-visible">
+        <div className="print:hidden">
+          <Topbar onMenu={() => setDrawerOpen(true)} />
+        </div>
+        <main className="flex-1 overflow-y-auto p-6 print:overflow-visible print:p-0">{children}</main>
       </div>
     </div>
   );

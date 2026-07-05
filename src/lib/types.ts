@@ -46,6 +46,57 @@ export interface PageResponse<T> {
   totalPages: number;
 }
 
+export interface DonorImportRow {
+  fullName: string;
+  email?: string;
+  phone?: string;
+  city?: string;
+  donorType?: string;
+}
+
+export interface DonorImportResult {
+  imported: number;
+  skipped: number;
+  errors: string[];
+}
+
+export interface DuplicateGroup {
+  reason: string;
+  donors: Donor[];
+}
+
+export interface YearEndPaymentLine {
+  date: string;
+  amount: number;
+  method: string | null;
+  receiptNumber: string | null;
+}
+
+export interface YearEndDonorStatement {
+  donorId: string;
+  donorName: string;
+  email: string | null;
+  city: string | null;
+  totalGiven: number;
+  payments: YearEndPaymentLine[];
+}
+
+export interface YearEndStatementResponse {
+  year: number;
+  statements: YearEndDonorStatement[];
+}
+
+export interface AuditLogEntry {
+  id: string;
+  action: string;
+  entityType: string | null;
+  entityId: string | null;
+  actorUserId: string | null;
+  actorName: string | null;
+  actorEmail: string | null;
+  createdAt: string;
+}
+
 /** Per-tenant usage snapshot for the platform admin console. */
 export interface OrgUsageMetrics {
   organizationId: string;

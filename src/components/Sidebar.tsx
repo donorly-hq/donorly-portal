@@ -67,7 +67,10 @@ const NAV: NavGroup[] = [
   {
     heading: "Administration",
     orgScoped: true,
-    items: [{ label: "Team", href: "/settings/team", permission: "users.manage" }],
+    items: [
+      { label: "Team", href: "/settings/team", permission: "users.manage" },
+      { label: "Audit log", href: "/settings/audit", permission: "org.settings.manage" },
+    ],
   },
   {
     heading: "Platform",

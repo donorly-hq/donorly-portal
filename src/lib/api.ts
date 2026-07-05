@@ -70,8 +70,35 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   return text ? (JSON.parse(text) as T) : (undefined as T);
 }
 
+/** Fetch a file with auth and trigger a browser download. */
+async function download(path: string, fallbackName: string): Promise<void> {
+  const headers: Record<string, string> = {};
+  const session = loadSession();
+  if (session?.token) {
+    headers["Authorization"] = `Bearer ${session.token}`;
+  }
+  const response = await fetch(`${API_BASE}${path}`, { headers });
+  if (!response.ok) {
+    throw new ApiError(response.status, `Export failed (${response.status})`);
+  }
+  const disposition = response.headers.get("Content-Disposition") ?? "";
+  const match = /filename="?([^";]+)"?/.exec(disposition);
+  const filename = match?.[1] ?? fallbackName;
+
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 export const api = {
   get: <T>(path: string) => request<T>(path),
+  download,
   post: <T>(path: string, body?: unknown, auth = true) =>
     request<T>(path, { method: "POST", body, auth }),
   put: <T>(path: string, body?: unknown) =>

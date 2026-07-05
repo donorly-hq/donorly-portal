@@ -102,7 +102,17 @@ export default function PaymentsPage() {
       <PageHeader
         title="Payments"
         subtitle="Record payments against pledges and issue receipts"
-        action={<Button onClick={() => setModalOpen(true)}>Record payment</Button>}
+        action={
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => api.download("/export/payments", "payments.csv").catch((e) => setError(e.message))}
+            >
+              Export CSV
+            </Button>
+            <Button onClick={() => setModalOpen(true)}>Record payment</Button>
+          </div>
+        }
       />
 
       <Card className="overflow-x-auto p-0">
