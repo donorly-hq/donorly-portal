@@ -116,6 +116,17 @@ export default function CampaignDetailPage() {
         subtitle="Campaign overview"
         action={
           <div className="flex flex-wrap gap-2">
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={async () => {
+                const url = `${window.location.origin}/t/${campaignId}`;
+                await navigator.clipboard.writeText(url);
+                setNotice(`Public tally link copied: ${url}`);
+              }}
+            >
+              Copy public tally link
+            </Button>
             <Link href={`/live/${campaignId}`}>
               <Button variant="secondary" type="button">Live view</Button>
             </Link>

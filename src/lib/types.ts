@@ -110,6 +110,27 @@ export interface CampaignLive {
   recentPledges: CampaignLiveRecentPledge[];
 }
 
+/** Anonymized live tally from the public (unauthenticated) endpoint. */
+export interface PublicThermometer {
+  organizationName: string;
+  campaignName: string;
+  goalAmount: number;
+  pledged: number;
+  collected: number;
+  pledgeCount: number;
+  recentPledges: CampaignLiveRecentPledge[];
+}
+
+export interface PublicCheckinInfo {
+  eventName: string;
+  eventLocation: string | null;
+  eventStartsAt: string | null;
+  guestName: string;
+  partySize: number;
+  status: string;
+  checkedInAt: string | null;
+}
+
 export interface AuditLogEntry {
   id: string;
   action: string;

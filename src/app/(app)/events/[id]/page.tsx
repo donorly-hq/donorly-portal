@@ -2,6 +2,7 @@
 
 import { use, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import QRCode from "qrcode";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type {
@@ -50,6 +51,25 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const [shiftForm, setShiftForm] = useState(emptyShift);
   const [code, setCode] = useState("");
   const [codeMsg, setCodeMsg] = useState<string | null>(null);
+
+  const [qrReg, setQrReg] = useState<EventRegistration | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [qrCopied, setQrCopied] = useState(false);
+
+  const checkinUrl = (reg: EventRegistration) =>
+    `${window.location.origin}/checkin/${id}/${reg.checkInCode}`;
+
+  const showQr = async (reg: EventRegistration) => {
+    setQrReg(reg);
+    setQrCopied(false);
+    setQrDataUrl(await QRCode.toDataURL(checkinUrl(reg), { width: 280, margin: 1 }));
+  };
+
+  const copyQrLink = async () => {
+    if (!qrReg) return;
+    await navigator.clipboard.writeText(checkinUrl(qrReg));
+    setQrCopied(true);
+  };
 
   const load = useCallback(() => {
     Promise.all([
@@ -267,6 +287,14 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                   </Badge>
                 </td>
                 <td className="px-4 py-3 text-right">
+                  {r.status !== "cancelled" ? (
+                    <button
+                      className="mr-3 text-xs text-emerald hover:underline"
+                      onClick={() => showQr(r)}
+                    >
+                      QR
+                    </button>
+                  ) : null}
                   {canCheckIn && r.status === "registered" ? (
                     <button
                       className="mr-3 text-xs text-emerald hover:underline"
@@ -397,6 +425,40 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         </>
       ) : null}
+
+      <Modal
+        open={qrReg !== null}
+        title="Self-check-in QR"
+        onClose={() => { setQrReg(null); setQrDataUrl(null); }}
+      >
+        {qrReg ? (
+          <div className="space-y-4 text-center">
+            <p className="text-sm text-black/60">
+              Send this to <strong>{qrReg.guestName}</strong> (or print it on their ticket).
+              Scanning it opens a self-check-in page — no app, no line at the door.
+            </p>
+            {qrDataUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={qrDataUrl}
+                alt={`Check-in QR for ${qrReg.guestName}`}
+                className="mx-auto rounded-lg border border-black/10"
+              />
+            ) : (
+              <Spinner />
+            )}
+            <p className="font-mono text-sm text-black/50">{qrReg.checkInCode}</p>
+            <div className="flex justify-center gap-2">
+              <Button type="button" variant="secondary" onClick={copyQrLink}>
+                {qrCopied ? "Link copied!" : "Copy link"}
+              </Button>
+              <Button type="button" onClick={() => { setQrReg(null); setQrDataUrl(null); }}>
+                Done
+              </Button>
+            </div>
+          </div>
+        ) : null}
+      </Modal>
 
       <Modal open={guestOpen} title="Register guest" onClose={() => setGuestOpen(false)}>
         <form onSubmit={registerGuest} className="space-y-4">
