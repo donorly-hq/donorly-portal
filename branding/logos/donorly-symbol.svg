@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none" role="img" aria-label="Donorly symbol">
+  <!-- Giving arc  growth, community, live campaign progress -->
+  <path d="M18 88 C18 48 42 22 60 22 C78 22 102 48 102 88" stroke="#0a4f3f" stroke-width="14" stroke-linecap="round"/>
+  <path d="M28 88 C28 56 44 34 60 34 C76 34 92 56 92 88" stroke="#0d6650" stroke-width="6" stroke-linecap="round" opacity="0.35"/>
+  <!-- Gold accent  reserved for achievement / money-in moments -->
+  <circle cx="60" cy="18" r="9" fill="#a87f2f"/>
+</svg>

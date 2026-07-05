@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Donorly Brand Guidelines</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --emerald: #0a4f3f;
+      --emerald-dark: #083a2e;
+      --emerald-light: #0d6650;
+      --emerald-50: #eef4f1;
+      --emerald-100: #dcebe4;
+      --gold: #a87f2f;
+      --gold-dark: #7c5c1f;
+      --gold-light: #c79a45;
+      --gold-50: #faf3e2;
+      --cream: #faf6ec;
+      --ink: #1c2b26;
+      --muted: #5a6b64;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    @page { size: A4; margin: 18mm 16mm; }
+    body {
+      font-family: "Manrope", system-ui, sans-serif;
+      color: var(--ink);
+      background: white;
+      font-size: 10.5pt;
+      line-height: 1.55;
+    }
+    h1, h2, h3 { font-family: "Cormorant Garamond", Georgia, serif; font-weight: 700; color: var(--emerald); }
+    h1 { font-size: 42pt; line-height: 1.05; letter-spacing: -0.02em; }
+    h2 { font-size: 22pt; margin: 28px 0 12px; page-break-after: avoid; }
+    h3 { font-size: 14pt; margin: 18px 0 8px; page-break-after: avoid; }
+    p { margin-bottom: 10px; color: var(--ink); }
+    .muted { color: var(--muted); }
+    .page { page-break-after: always; padding-bottom: 8mm; }
+    .page:last-child { page-break-after: auto; }
+
+    /* Cover */
+    .cover {
+      min-height: 250mm;
+      background: linear-gradient(160deg, var(--emerald-dark) 0%, var(--emerald) 55%, var(--emerald-light) 100%);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 24mm 20mm;
+      margin: -18mm -16mm 0;
+      page-break-after: always;
+    }
+    .cover .symbol { width: 88px; height: 88px; margin-bottom: 24px; }
+    .cover h1 { color: white; font-size: 56pt; margin-bottom: 8px; }
+    .cover .tagline { font-size: 14pt; font-weight: 500; opacity: 0.88; max-width: 420px; }
+    .cover .meta { margin-top: auto; font-size: 9pt; opacity: 0.65; }
+
+    .swatch-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 14px 0; }
+    .swatch { border-radius: 10px; overflow: hidden; border: 1px solid rgba(0,0,0,0.08); page-break-inside: avoid; }
+    .swatch-color { height: 56px; }
+    .swatch-info { padding: 10px 12px; background: var(--cream); font-size: 9pt; }
+    .swatch-info strong { display: block; font-size: 10pt; color: var(--emerald); margin-bottom: 2px; }
+
+    .logo-row { display: flex; gap: 16px; flex-wrap: wrap; margin: 16px 0; align-items: center; }
+    .logo-box {
+      flex: 1 1 200px;
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid rgba(0,0,0,0.08);
+      text-align: center;
+      page-break-inside: avoid;
+    }
+    .logo-box.dark { background: var(--emerald-dark); }
+    .logo-box.cream { background: var(--cream); }
+    .logo-box img, .logo-box svg { max-width: 100%; height: auto; max-height: 72px; }
+    .logo-box .caption { font-size: 8.5pt; color: var(--muted); margin-top: 10px; }
+    .logo-box.dark .caption { color: rgba(255,255,255,0.6); }
+
+    .do-dont { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0; }
+    .do, .dont {
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 9.5pt;
+      page-break-inside: avoid;
+    }
+    .do { background: var(--emerald-50); border-left: 4px solid var(--emerald); }
+    .dont { background: #fef2f2; border-left: 4px solid #dc2626; }
+    .do strong, .dont strong { display: block; margin-bottom: 6px; }
+
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 9.5pt; }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--emerald-100); }
+    th { color: var(--emerald); font-weight: 600; }
+
+    .type-sample h-display {
+      display: block;
+      font-family: "Cormorant Garamond", Georgia, serif;
+      font-size: 36pt;
+      font-weight: 700;
+      color: var(--emerald);
+      line-height: 1.1;
+      margin: 8px 0;
+    }
+    .type-sample .ui { font-family: Manrope, sans-serif; font-size: 11pt; }
+
+    ul { margin: 8px 0 12px 20px; }
+    li { margin-bottom: 4px; }
+
+    .gold-callout {
+      background: var(--gold-50);
+      border: 1px solid rgba(168,127,47,0.25);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin: 14px 0;
+      page-break-inside: avoid;
+    }
+    .gold-callout strong { color: var(--gold-dark); }
+
+    footer.note {
+      margin-top: 24px;
+      padding-top: 12px;
+      border-top: 1px solid var(--emerald-100);
+      font-size: 8.5pt;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- COVER -->
+  <section class="cover">
+    <img class="symbol" src="logos/donorly-symbol.svg" alt="" />
+    <h1>Donorly</h1>
+    <p class="tagline">Brand guidelines — fundraising software built for community organizations, live events, and dignified donor relationships.</p>
+    <p class="meta">Version 1.0 · July 2026 · Confidential</p>
+  </section>
+
+  <!-- 1. BRAND STORY -->
+  <section class="page">
+    <h2>1. Brand story</h2>
+    <p><strong>Donorly</strong> helps mosques, masjids, and community nonprofits run fundraising with clarity and trust — from pledge cards and follow-ups to live event tally screens and inventory accountability.</p>
+    <p>Our brand should feel <strong>grounded, dignified, and capable</strong>: not flashy fintech, not cold enterprise software. We serve volunteers at a Friday fundraiser, finance teams issuing receipts, and donors scanning a QR from their pew.</p>
+
+    <h3>Brand personality</h3>
+    <table>
+      <tr><th>We are</th><th>We are not</th></tr>
+      <tr><td>Trustworthy &amp; calm</td><td>Hype-driven or aggressive</td></tr>
+      <tr><td>Event-ready &amp; practical</td><td>Over-designed or decorative</td></tr>
+      <tr><td>Warm &amp; community-centered</td><td>Corporate or impersonal</td></tr>
+      <tr><td>Clear &amp; action-oriented</td><td>Jargon-heavy or vague</td></tr>
+    </table>
+
+    <h3>Tagline (optional use)</h3>
+    <p class="type-sample"><span style="font-family:'Cormorant Garamond',serif;font-size:18pt;font-weight:600;color:var(--emerald)">Fundraising, organized.</span></p>
+    <p class="muted">Use on marketing materials, login screens, and store listings — not required in the product UI.</p>
+  </section>
+
+  <!-- 2. LOGO -->
+  <section class="page">
+    <h2>2. Logo</h2>
+    <p>The Donorly mark pairs a <strong>giving arc</strong> symbol with a bold serif wordmark. The arc suggests growth, community uplift, and live campaign progress; the gold dot marks achievement and “money-in” moments.</p>
+
+    <div class="logo-row">
+      <div class="logo-box cream">
+        <img src="logos/donorly-logo-horizontal.png" alt="Donorly horizontal logo" style="max-height:80px" />
+        <p class="caption">Primary — horizontal lockup (PNG)</p>
+      </div>
+      <div class="logo-box cream">
+        <img src="logos/donorly-logo-horizontal.svg" alt="Donorly SVG" style="max-height:64px" />
+        <p class="caption">Primary — vector (SVG)</p>
+      </div>
+    </div>
+    <div class="logo-row">
+      <div class="logo-box dark">
+        <img src="logos/donorly-logo-reversed.svg" alt="Donorly reversed" style="max-height:64px" />
+        <p class="caption">Reversed — dark backgrounds</p>
+      </div>
+      <div class="logo-box cream">
+        <img src="logos/donorly-icon.png" alt="Donorly icon" style="max-height:80px;border-radius:16px" />
+        <p class="caption">App icon / favicon source</p>
+      </div>
+    </div>
+
+    <h3>Clear space</h3>
+    <p>Maintain clear space equal to the height of the gold dot around the full lockup. Do not place text, borders, or other marks inside this zone.</p>
+
+    <h3>Minimum size</h3>
+    <ul>
+      <li><strong>Digital:</strong> wordmark legible at 120px width; symbol alone at 24px.</li>
+      <li><strong>Print:</strong> full lockup no smaller than 25mm wide.</li>
+    </ul>
+
+    <div class="do-dont">
+      <div class="do">
+        <strong>Do</strong>
+        Use approved SVG/PNG files.<br/>
+        Use reversed logo on emerald or dark photos.<br/>
+        Keep gold accent visible on the symbol.
+      </div>
+      <div class="dont">
+        <strong>Don't</strong>
+        Stretch, rotate, or add drop shadows.<br/>
+        Change logo colors outside this guide.<br/>
+        Replace the wordmark with a different font.
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. COLOR -->
+  <section class="page">
+    <h2>3. Color</h2>
+    <p><strong>Emerald</strong> is trust, structure, and navigation. <strong>Gold</strong> is reserved for collected amounts, goals reached, and positive confirmation — never as a primary UI chrome color. <strong>Cream</strong> is the warm canvas that keeps the product approachable.</p>
+
+    <h3>Primary palette</h3>
+    <div class="swatch-grid">
+      <div class="swatch"><div class="swatch-color" style="background:#0a4f3f"></div><div class="swatch-info"><strong>Emerald</strong>#0a4f3f · Primary brand, buttons, headings</div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#083a2e"></div><div class="swatch-info"><strong>Emerald Dark</strong>#083a2e · Sidebar, projector screens</div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#0d6650"></div><div class="swatch-info"><strong>Emerald Light</strong>#0d6650 · Hover states</div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#a87f2f"></div><div class="swatch-info"><strong>Gold</strong>#a87f2f · Collected, achievements</div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#7c5c1f"></div><div class="swatch-info"><strong>Gold Dark</strong>#7c5c1f · Gold text on light bg</div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#faf6ec;border:1px solid #ddd"></div><div class="swatch-info"><strong>Cream</strong>#faf6ec · App background</div></div>
+    </div>
+
+    <h3>Tint ladder (UI)</h3>
+    <div class="swatch-grid">
+      <div class="swatch"><div class="swatch-color" style="background:#eef4f1"></div><div class="swatch-info"><strong>Emerald 50</strong>#eef4f1 · Row hover, soft fills</div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#dcebe4"></div><div class="swatch-info"><strong>Emerald 100</strong>#dcebe4 · Notices, selected rows</div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#faf3e2"></div><div class="swatch-info"><strong>Gold 50</strong>#faf3e2 · Pledge saved, success banners</div></div>
+    </div>
+
+    <div class="gold-callout">
+      <strong>Gold rule:</strong> Use gold for money-in and milestone moments (total collected, goal reached, pledge confirmed). Do not use gold for navigation, body text, or generic buttons.
+    </div>
+
+    <h3>Accessibility</h3>
+    <p>Body text on cream: <strong>#1c2b26</strong>. White text on org-custom sidebar colors must meet WCAG AA — the product darkens brand colors automatically when contrast is insufficient.</p>
+  </section>
+
+  <!-- 4. TYPOGRAPHY -->
+  <section class="page">
+    <h2>4. Typography</h2>
+    <div class="type-sample">
+      <span style="font-family:'Cormorant Garamond',serif;font-size:36pt;font-weight:700;color:var(--emerald);line-height:1.1;display:block;margin:8px 0">Campaign progress</span>
+      <p class="ui"><strong>Cormorant Garamond</strong> (600–700) — Display &amp; wordmark. Headlines, campaign names, login hero.</p>
+    </div>
+    <div class="type-sample" style="margin-top:20px">
+      <p class="ui" style="font-size:12pt"><strong>Manrope</strong> (400–700) — UI &amp; body. Forms, tables, buttons, navigation labels.</p>
+      <p class="ui">Record the pledge · Mark collected · Scan to pledge</p>
+    </div>
+
+    <h3>Type scale (web)</h3>
+    <table>
+      <tr><th>Role</th><th>Font</th><th>Size</th></tr>
+      <tr><td>Page title</td><td>Cormorant Garamond Bold</td><td>24–36px</td></tr>
+      <tr><td>Section heading</td><td>Cormorant Garamond Bold</td><td>20–24px</td></tr>
+      <tr><td>Body</td><td>Manrope Regular</td><td>14–16px</td></tr>
+      <tr><td>Label / table</td><td>Manrope Medium</td><td>12–14px</td></tr>
+      <tr><td>Live tally (projector)</td><td>Cormorant Garamond Bold</td><td>48–96px</td></tr>
+    </table>
+  </section>
+
+  <!-- 5. VOICE & APPLICATION -->
+  <section class="page">
+    <h2>5. Voice &amp; tone</h2>
+    <ul>
+      <li><strong>Plain language:</strong> “Pledge saved” not “Transaction submitted.”</li>
+      <li><strong>Respectful:</strong> Acknowledge donors and volunteers by name when possible.</li>
+      <li><strong>Calm under pressure:</strong> Event-night copy stays short and confident.</li>
+      <li><strong>Honest about limits:</strong> “Online payment coming soon” rather than broken buttons.</li>
+    </ul>
+
+    <h3>Co-branding (multi-tenant)</h3>
+    <p>Each organization may set a <strong>primary color</strong> and logo. Donorly emerald remains the platform default; org branding applies to sidebar and accents. Never replace the Donorly wordmark with an org name in the platform chrome — show org name beside or below Donorly.</p>
+
+    <h3>Photography &amp; imagery</h3>
+    <ul>
+      <li>Real community events, volunteers, and gatherings.</li>
+      <li>Warm, natural light; avoid sterile stock office imagery.</li>
+      <li>Diverse representation aligned with the org’s community.</li>
+    </ul>
+
+    <h3>Digital touchpoints</h3>
+    <table>
+      <tr><th>Surface</th><th>Guidance</th></tr>
+      <tr><td>Web portal</td><td>Cream background, emerald sidebar, gold for collected stats</td></tr>
+      <tr><td>Live tally / projector</td><td>Emerald dark full-bleed, large serif numbers, gold at 100% goal</td></tr>
+      <tr><td>Public self-pledge</td><td>Mobile-first, cream + emerald, minimal fields</td></tr>
+      <tr><td>App icon / PWA</td><td>Symbol on cream; 512×512 master from <code>donorly-icon.png</code></td></tr>
+      <tr><td>Email receipts</td><td>Org-branded sender when configured; Donorly footer optional</td></tr>
+    </table>
+
+    <footer class="note">
+      Asset pack: <code>donorly-portal/branding/logos/</code> — SVG (preferred for web/print), PNG lockups, app icon.<br/>
+      Questions: brand@donorly.org · © 2026 Donorly
+    </footer>
+  </section>
+
+</body>
+</html>

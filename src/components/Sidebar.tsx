@@ -54,6 +54,7 @@ const NAV: NavGroup[] = [
       { label: "Events",    href: "/events",    permission: "events.read" },
       { label: "Townhalls", href: "/townhalls", permission: "townhalls.read" },
       { label: "My shifts", href: "/my-shifts", permission: "volunteers.read" },
+      { label: "Inventory", href: "/inventory", permission: "inventory.read" },
     ],
   },
   {

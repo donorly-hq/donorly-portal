@@ -324,6 +324,29 @@ export interface CampaignDashboard {
 
 // ---- Phase 2: Team & roles -------------------------------------------
 
+export interface InventoryUnit {
+  unitNumber: number;
+  assignmentId: string | null;
+  holderUserId: string | null;
+  holderName: string | null;
+  assignedAt: string | null;
+  expectedReturnDate: string | null;
+  daysHeld: number;
+  overdue: boolean;
+  notes: string | null;
+}
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  category: string | null;
+  quantity: number;
+  notes: string | null;
+  unitsOut: number;
+  unitsOverdue: number;
+  units: InventoryUnit[];
+}
+
 export interface TeamMember {
   membershipId: string;
   userId: string;

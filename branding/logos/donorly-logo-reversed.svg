@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 120" fill="none" role="img" aria-label="Donorly reversed">
+  <rect width="420" height="120" rx="12" fill="#083a2e"/>
+  <g transform="translate(0,0)">
+    <path d="M18 88 C18 48 42 22 60 22 C78 22 102 48 102 88" stroke="#ffffff" stroke-width="14" stroke-linecap="round"/>
+    <path d="M28 88 C28 56 44 34 60 34 C76 34 92 56 92 88" stroke="#ffffff" stroke-width="6" stroke-linecap="round" opacity="0.25"/>
+    <circle cx="60" cy="18" r="9" fill="#c79a45"/>
+  </g>
+  <text x="128" y="78" font-family="Georgia, 'Cormorant Garamond', serif" font-size="64" font-weight="700" fill="#ffffff" letter-spacing="-1">Donorly</text>
+</svg>
