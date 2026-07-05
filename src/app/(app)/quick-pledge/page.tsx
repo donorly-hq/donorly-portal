@@ -83,7 +83,7 @@ function QuickPledgeContent() {
       </div>
 
       {lastSaved ? (
-        <div className="mb-4 rounded-xl bg-emerald/10 px-4 py-3 text-sm text-emerald">
+        <div className="mb-4 rounded-xl border border-gold/25 bg-gold-50 px-4 py-3 text-sm text-gold-dark">
           Saved: <strong>{currency(lastSaved.amount)}</strong> from{" "}
           <strong>{lastSaved.donorName}</strong>
           {lastSaved.newDonor ? " (new donor created)" : ""}
@@ -140,7 +140,7 @@ function QuickPledgeContent() {
                   "rounded-xl border px-2 py-4 text-lg font-bold transition " +
                   (amount === v && customAmount === ""
                     ? "border-emerald bg-emerald text-white"
-                    : "border-black/15 text-emerald hover:bg-emerald/5")
+                    : "border-black/15 text-emerald hover:bg-emerald-50")
                 }
               >
                 ${v.toLocaleString()}

@@ -47,7 +47,7 @@ export default function ReportsPage() {
         <StatCard label="Total donors" value={report.totalDonors} />
         <StatCard label="Active campaigns" value={report.activeCampaigns} />
         <StatCard label="Total pledged" value={currency(report.totalPledged)} />
-        <StatCard label="Total collected" value={currency(report.totalCollected)} />
+        <StatCard label="Total collected" value={currency(report.totalCollected)} tone="gold" />
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -66,7 +66,7 @@ export default function ReportsPage() {
           </div>
           <div>
             <p className="text-sm text-slate-500">Collected this month</p>
-            <p className="text-3xl font-bold text-emerald">{currency(report.collectedThisMonth)}</p>
+            <p className="text-3xl font-bold text-gold-dark">{currency(report.collectedThisMonth)}</p>
           </div>
         </div>
       </Card>

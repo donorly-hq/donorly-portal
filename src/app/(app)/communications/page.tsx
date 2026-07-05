@@ -402,7 +402,7 @@ export default function CommunicationsPage() {
                   <li key={d.id}>
                     <label
                       className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm ${
-                        disabled ? "opacity-40" : "hover:bg-black/5"
+                        disabled ? "opacity-40" : "hover:bg-emerald-50"
                       }`}
                     >
                       <input

@@ -11,11 +11,13 @@ import {
 } from "react";
 import { api } from "./api";
 import { clearSession, loadSession, saveSession } from "./session";
-import type { AuthSession, LoginResponse, MeResponse } from "./types";
+import type { AuthSession, LoginResponse, MeResponse, OrgChoice } from "./types";
 
 export interface LoginResult {
   otpRequired: boolean;
   challengeId?: string;
+  orgSelectionRequired?: boolean;
+  organizations?: OrgChoice[];
 }
 
 interface AuthContextValue {
@@ -23,6 +25,8 @@ interface AuthContextValue {
   loading: boolean;
   login: (email: string, password: string, organizationSlug?: string) => Promise<LoginResult>;
   verifyOtp: (challengeId: string, code: string) => Promise<void>;
+  selectOrg: (challengeId: string, organizationId: string) => Promise<void>;
+  switchOrg: (organizationId: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshBranding: () => Promise<void>;
   hasPermission: (permission: string) => boolean;
@@ -78,6 +82,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (result.otpRequired) {
         return { otpRequired: true, challengeId: result.challengeId ?? undefined };
       }
+      if (result.orgSelectionRequired) {
+        return {
+          otpRequired: false,
+          orgSelectionRequired: true,
+          challengeId: result.challengeId ?? undefined,
+          organizations: result.organizations ?? [],
+        };
+      }
       saveSession(result);
       setSession(result);
       return { otpRequired: false };
@@ -87,6 +99,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const verifyOtp = useCallback(async (challengeId: string, code: string) => {
     const result = await api.post<LoginResponse>("/auth/verify-otp", { challengeId, code }, false);
+    saveSession(result);
+    setSession(result);
+  }, []);
+
+  const selectOrg = useCallback(async (challengeId: string, organizationId: string) => {
+    const result = await api.post<LoginResponse>(
+      "/auth/select-org",
+      { challengeId, organizationId },
+      false,
+    );
+    saveSession(result);
+    setSession(result);
+  }, []);
+
+  const switchOrg = useCallback(async (organizationId: string) => {
+    const result = await api.post<LoginResponse>("/auth/switch-org", { organizationId });
     saveSession(result);
     setSession(result);
   }, []);
@@ -119,8 +147,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ session, loading, login, verifyOtp, logout, refreshBranding, hasPermission }),
-    [session, loading, login, verifyOtp, logout, refreshBranding, hasPermission],
+    () => ({ session, loading, login, verifyOtp, selectOrg, switchOrg, logout, refreshBranding, hasPermission }),
+    [session, loading, login, verifyOtp, selectOrg, switchOrg, logout, refreshBranding, hasPermission],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

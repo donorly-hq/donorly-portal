@@ -20,6 +20,7 @@ import {
   Input,
   Modal,
   PageHeader,
+  Progress,
   Select,
   Spinner,
   StatCard,
@@ -352,7 +353,7 @@ function PlatformAdminDashboard({ name }: { name: string }) {
             </thead>
             <tbody>
               {orgs.map((org) => (
-                <tr key={org.id} className="border-b border-black/5 last:border-0 hover:bg-black/[.02] transition">
+                <tr key={org.id} className="border-b border-black/5 last:border-0 hover:bg-emerald-50/60 transition">
                   <td className="px-5 py-3">
                     <p className="font-medium">{org.name}</p>
                     <p className="text-xs text-black/40 font-mono">{org.slug}</p>
@@ -543,14 +544,14 @@ function PlatformAdminDashboard({ name }: { name: string }) {
             <div className="flex gap-2 border-b border-black/10 pb-2">
               <button
                 type="button"
-                className={`rounded-lg px-3 py-1.5 text-sm font-medium ${ownerMode === "promote" ? "bg-emerald/10 text-emerald" : "text-black/50 hover:bg-black/5"}`}
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium ${ownerMode === "promote" ? "bg-emerald-100 text-emerald" : "text-black/50 hover:bg-emerald-50"}`}
                 onClick={() => setOwnerMode("promote")}
               >
                 Promote member
               </button>
               <button
                 type="button"
-                className={`rounded-lg px-3 py-1.5 text-sm font-medium ${ownerMode === "new" ? "bg-emerald/10 text-emerald" : "text-black/50 hover:bg-black/5"}`}
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium ${ownerMode === "new" ? "bg-emerald-100 text-emerald" : "text-black/50 hover:bg-emerald-50"}`}
                 onClick={() => setOwnerMode("new")}
               >
                 New account
@@ -657,14 +658,12 @@ function OrgSnapshot({ name, data }: { name: string; data: OrgDashboard }) {
         <StatCard label="Active campaigns" value={data.totalCampaigns} />
         <StatCard label="Open follow-ups" value={data.openFollowUps} />
         <StatCard label="Total pledged" value={currency(data.totalPledged)} />
-        <StatCard label="Total collected" value={currency(data.totalCollected)} />
+        <StatCard label="Total collected" value={currency(data.totalCollected)} tone="gold" />
         <StatCard label="Outstanding" value={currency(data.remaining)} hint={`${progress}% collected`} />
       </div>
       <div className="mt-6 rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
         <p className="mb-2 text-sm font-medium text-black/60">Collection progress</p>
-        <div className="h-3 w-full overflow-hidden rounded-full bg-black/5">
-          <div className="h-full rounded-full bg-emerald" style={{ width: `${progress}%` }} />
-        </div>
+        <Progress percent={progress} />
         <p className="mt-2 text-sm text-black/50">
           {currency(data.totalCollected)} collected of {currency(data.totalPledged)} pledged
         </p>
@@ -695,17 +694,13 @@ function AmbassadorSnapshot({ name, data }: { name: string; data: AmbassadorDash
         <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
           <p className="mb-1 text-sm font-medium text-black/60">Follow-up progress</p>
           <p className="mb-3 text-xs text-black/40">{data.completedFollowUps} of {data.totalFollowUps} completed</p>
-          <div className="h-3 w-full overflow-hidden rounded-full bg-black/5">
-            <div className="h-full rounded-full bg-emerald" style={{ width: `${followUpPct}%` }} />
-          </div>
+          <Progress percent={followUpPct} />
           <p className="mt-2 text-sm text-black/50">{followUpPct}% done</p>
         </div>
         <div className="rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
           <p className="mb-1 text-sm font-medium text-black/60">Pledge collection</p>
           <p className="mb-3 text-xs text-black/40">{currency(data.totalCollected)} of {currency(data.totalPledged)}</p>
-          <div className="h-3 w-full overflow-hidden rounded-full bg-black/5">
-            <div className="h-full rounded-full bg-emerald" style={{ width: `${collectionPct}%` }} />
-          </div>
+          <Progress percent={collectionPct} />
           <p className="mt-2 text-sm text-black/50">{collectionPct}% collected</p>
         </div>
       </div>
@@ -813,9 +808,7 @@ function CampaignManagerSnapshot({ name, data }: { name: string; data: CampaignM
       <div className="mt-4 rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
         <p className="mb-1 text-sm font-medium text-black/60">Pledge collection across my campaigns</p>
         <p className="mb-3 text-xs text-black/40">{currency(data.totalCollected)} of {currency(data.totalPledged)}</p>
-        <div className="h-3 w-full overflow-hidden rounded-full bg-black/5">
-          <div className="h-full rounded-full bg-emerald" style={{ width: `${collectionPct}%` }} />
-        </div>
+        <Progress percent={collectionPct} />
         <p className="mt-2 text-sm text-black/50">{collectionPct}% collected</p>
       </div>
       <Section title="My Campaigns">

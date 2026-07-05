@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import QRCode from "qrcode";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { CampaignDashboard, Donor, Pledge } from "@/lib/types";
@@ -37,6 +38,19 @@ export default function CampaignDetailPage() {
   const [saving, setSaving] = useState(false);
   const [reminding, setReminding] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [eventModeOpen, setEventModeOpen] = useState(false);
+  const [selfPledgeQr, setSelfPledgeQr] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!eventModeOpen || selfPledgeQr) return;
+    QRCode.toDataURL(`${window.location.origin}/p/${campaignId}`, {
+      width: 480,
+      margin: 1,
+      color: { dark: "#083a2e", light: "#ffffff" },
+    })
+      .then(setSelfPledgeQr)
+      .catch(() => setSelfPledgeQr(null));
+  }, [eventModeOpen, selfPledgeQr, campaignId]);
 
   const load = useCallback(() => {
     Promise.all([
@@ -116,16 +130,8 @@ export default function CampaignDetailPage() {
         subtitle="Campaign overview"
         action={
           <div className="flex flex-wrap gap-2">
-            <Button
-              variant="secondary"
-              type="button"
-              onClick={async () => {
-                const url = `${window.location.origin}/t/${campaignId}`;
-                await navigator.clipboard.writeText(url);
-                setNotice(`Public tally link copied: ${url}`);
-              }}
-            >
-              Copy public tally link
+            <Button type="button" onClick={() => setEventModeOpen(true)}>
+              Event Mode
             </Button>
             <Link href={`/live/${campaignId}`}>
               <Button variant="secondary" type="button">Live view</Button>
@@ -136,7 +142,11 @@ export default function CampaignDetailPage() {
               </Link>
             ) : null}
             {canWritePledge ? (
-              <Button onClick={() => setModalOpen(true)} disabled={donors.length === 0}>
+              <Button
+                variant="secondary"
+                onClick={() => setModalOpen(true)}
+                disabled={donors.length === 0}
+              >
                 Add pledge
               </Button>
             ) : null}
@@ -145,7 +155,7 @@ export default function CampaignDetailPage() {
       />
 
       {notice ? (
-        <p className="mt-3 rounded-lg bg-emerald/10 px-3 py-2 text-sm text-emerald">{notice}</p>
+        <p className="mt-3 rounded-lg bg-emerald-100 px-3 py-2 text-sm text-emerald">{notice}</p>
       ) : null}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -170,11 +180,18 @@ export default function CampaignDetailPage() {
           <tbody>
             {pledges.map((p) => (
               <tr key={p.id} className="border-b border-black/5 last:border-0">
-                <td className="px-4 py-3 font-medium text-emerald">{donorName(p.donorId)}</td>
+                <td className="px-4 py-3 font-medium text-emerald">
+                  {donorName(p.donorId)}
+                  {p.source === "self" ? (
+                    <span className="ml-2 rounded-full bg-gold-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gold-dark">
+                      self
+                    </span>
+                  ) : null}
+                </td>
                 <td className="px-4 py-3">{currency(p.amount)}</td>
                 <td className="px-4 py-3">{currency(p.collectedAmount)}</td>
                 <td className="px-4 py-3">
-                  <Badge tone={p.status === "fulfilled" ? "success" : "warning"}>{p.status}</Badge>
+                  <Badge tone={p.status === "fulfilled" ? "gold" : "warning"}>{p.status}</Badge>
                 </td>
                 {canWritePledge ? (
                   <td className="px-4 py-3 text-right">
@@ -210,6 +227,81 @@ export default function CampaignDetailPage() {
           </tbody>
         </table>
       </Card>
+
+      <Modal open={eventModeOpen} title="Event Mode" onClose={() => setEventModeOpen(false)}>
+        <div className="space-y-5">
+          <p className="text-sm text-black/60">
+            Everything you need to run this campaign at a live event.
+          </p>
+
+          <div className="rounded-xl border border-black/10 p-4">
+            <p className="font-medium text-emerald">1. Projector screen</p>
+            <p className="mt-1 text-sm text-black/55">
+              Put the live tally on the big screen. Updates by itself as pledges come in.
+            </p>
+            <div className="mt-3 flex gap-2">
+              <a href={`/t/${campaignId}`} target="_blank" rel="noreferrer">
+                <Button variant="secondary" type="button">Open tally screen</Button>
+              </a>
+              <Button
+                variant="secondary"
+                type="button"
+                onClick={async () => {
+                  await navigator.clipboard.writeText(`${window.location.origin}/t/${campaignId}`);
+                  setNotice("Tally screen link copied.");
+                  setEventModeOpen(false);
+                }}
+              >
+                Copy link
+              </Button>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-black/10 p-4">
+            <p className="font-medium text-emerald">2. Volunteer quick entry</p>
+            <p className="mt-1 text-sm text-black/55">
+              Volunteers with tablets record pledges in seconds — name, phone, amount.
+            </p>
+            <div className="mt-3">
+              <Link href={`/quick-pledge?campaign=${campaignId}`}>
+                <Button variant="secondary" type="button">Open quick entry</Button>
+              </Link>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-gold/25 bg-gold-50/50 p-4">
+            <p className="font-medium text-emerald">3. Donor self-pledge QR</p>
+            <p className="mt-1 text-sm text-black/55">
+              Print this QR or leave it on the screen — donors scan it and pledge from
+              their own phones. No app, no login.
+            </p>
+            {selfPledgeQr ? (
+              <div className="mt-3 flex flex-col items-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={selfPledgeQr} alt="Self-pledge QR code" className="h-44 w-44 rounded-lg border border-black/10 bg-white p-2" />
+                <div className="mt-3 flex gap-2">
+                  <a href={`/p/${campaignId}`} target="_blank" rel="noreferrer">
+                    <Button variant="secondary" type="button">Preview donor page</Button>
+                  </a>
+                  <Button
+                    variant="secondary"
+                    type="button"
+                    onClick={async () => {
+                      await navigator.clipboard.writeText(`${window.location.origin}/p/${campaignId}`);
+                      setNotice("Self-pledge link copied.");
+                      setEventModeOpen(false);
+                    }}
+                  >
+                    Copy link
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-black/40">Generating QR…</p>
+            )}
+          </div>
+        </div>
+      </Modal>
 
       <Modal open={modalOpen} title="Add pledge" onClose={() => setModalOpen(false)}>
         <form onSubmit={handleCreate} className="space-y-4">

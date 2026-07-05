@@ -330,7 +330,7 @@ export default function PlatformOrganizationsPage() {
               {orgs.map((org) => (
                 <tr
                   key={org.id}
-                  className="border-b border-black/5 last:border-0 hover:bg-black/[.02] transition"
+                  className="border-b border-black/5 last:border-0 hover:bg-emerald-50/60 transition"
                 >
                   <td className="px-5 py-3">
                     <p className="font-medium">{org.name}</p>
@@ -593,14 +593,14 @@ export default function PlatformOrganizationsPage() {
             <div className="flex gap-2 border-b border-black/10 pb-2">
               <button
                 type="button"
-                className={`rounded-lg px-3 py-1.5 text-sm font-medium ${ownerMode === "promote" ? "bg-emerald/10 text-emerald" : "text-black/50 hover:bg-black/5"}`}
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium ${ownerMode === "promote" ? "bg-emerald-100 text-emerald" : "text-black/50 hover:bg-emerald-50"}`}
                 onClick={() => setOwnerMode("promote")}
               >
                 Promote member
               </button>
               <button
                 type="button"
-                className={`rounded-lg px-3 py-1.5 text-sm font-medium ${ownerMode === "new" ? "bg-emerald/10 text-emerald" : "text-black/50 hover:bg-black/5"}`}
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium ${ownerMode === "new" ? "bg-emerald-100 text-emerald" : "text-black/50 hover:bg-emerald-50"}`}
                 onClick={() => setOwnerMode("new")}
               >
                 New account

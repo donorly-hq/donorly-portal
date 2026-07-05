@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth";
+import { readableBrandBg } from "@/lib/color";
 import { cn } from "./ui";
 
 interface NavItem {
@@ -84,8 +85,9 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { session, hasPermission } = useAuth();
   const isPlatformAdmin = session?.platformAdmin === true;
 
-  // Use org-specific primary color when available, fall back to brand default
-  const sidebarBg = session?.organizationPrimaryColor || "#083a2e";
+  // Org-specific primary color when available, darkened if needed so white
+  // nav text stays readable (WCAG AA); falls back to brand emerald-dark.
+  const sidebarBg = readableBrandBg(session?.organizationPrimaryColor);
 
   return (
     <nav

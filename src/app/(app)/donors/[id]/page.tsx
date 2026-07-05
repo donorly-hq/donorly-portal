@@ -180,7 +180,7 @@ export default function DonorDetailPage() {
           {detail.tags.map((t) => (
             <span
               key={t.id}
-              className="inline-flex items-center gap-1 rounded-full bg-emerald/10 px-3 py-1 text-xs font-medium text-emerald"
+              className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald"
             >
               {t.name}
               {canWrite && (
@@ -364,7 +364,7 @@ export default function DonorDetailPage() {
                   <td className="px-4 py-3">{currency(p.amount)}</td>
                   <td className="px-4 py-3">{currency(p.collectedAmount)}</td>
                   <td className="px-4 py-3">
-                    <Badge tone={p.status === "fulfilled" ? "success" : "neutral"}>{p.status}</Badge>
+                    <Badge tone={p.status === "fulfilled" ? "gold" : "neutral"}>{p.status}</Badge>
                   </td>
                 </tr>
               ))}
@@ -455,7 +455,7 @@ export default function DonorDetailPage() {
                     <td className="px-4 py-3">{p.paymentMethod ?? "—"}</td>
                     <td className="px-4 py-3">
                       {p.receipt ? (
-                        <Badge tone="success">{p.receipt.receiptNumber}</Badge>
+                        <Badge tone="gold">{p.receipt.receiptNumber}</Badge>
                       ) : (
                         "—"
                       )}

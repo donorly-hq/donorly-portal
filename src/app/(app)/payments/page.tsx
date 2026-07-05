@@ -140,7 +140,7 @@ export default function PaymentsPage() {
                 <td className="px-4 py-3">{p.paymentMethod ?? "—"}</td>
                 <td className="px-4 py-3">
                   {p.receipt ? (
-                    <Badge tone="success">{p.receipt.receiptNumber}</Badge>
+                    <Badge tone="gold">{p.receipt.receiptNumber}</Badge>
                   ) : (
                     <span className="text-slate-400">None</span>
                   )}

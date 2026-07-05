@@ -50,7 +50,7 @@ export default function ResetPasswordPage() {
 
         {done ? (
           <div className="space-y-4 text-center">
-            <p className="rounded-lg bg-emerald/10 px-3 py-3 text-sm text-emerald">
+            <p className="rounded-lg bg-emerald-100 px-3 py-3 text-sm text-emerald">
               Password updated. Redirecting you to sign in…
             </p>
             <Link href="/login" className="inline-block text-sm text-emerald hover:underline">

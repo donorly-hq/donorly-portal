@@ -35,7 +35,7 @@ export default function ForgotPasswordPage() {
 
         {submitted ? (
           <div className="space-y-4 text-center">
-            <p className="rounded-lg bg-emerald/10 px-3 py-3 text-sm text-emerald">
+            <p className="rounded-lg bg-emerald-100 px-3 py-3 text-sm text-emerald">
               If an account exists for <span className="font-medium">{email}</span>, a reset link
               is on its way. Check your inbox — the link expires in 60 minutes.
             </p>

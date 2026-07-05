@@ -27,9 +27,9 @@ export function Button({
     "inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed";
   const variants: Record<ButtonVariant, string> = {
     primary: "bg-emerald text-white hover:bg-emerald-dark",
-    secondary: "border border-emerald/30 text-emerald hover:bg-emerald/5",
+    secondary: "border border-emerald/30 text-emerald hover:bg-emerald-50",
     danger: "bg-red-600 text-white hover:bg-red-700",
-    ghost: "text-emerald hover:bg-emerald/5",
+    ghost: "text-emerald hover:bg-emerald-50",
   };
   const sizes: Record<ButtonSize, string> = {
     sm: "px-3 py-1.5 text-xs",
@@ -58,13 +58,45 @@ export function Card({ children, className }: { children: ReactNode; className?:
   );
 }
 
-export function StatCard({ label, value, hint }: { label: string; value: ReactNode; hint?: string }) {
+export function StatCard({
+  label,
+  value,
+  hint,
+  tone = "default",
+}: {
+  label: string;
+  value: ReactNode;
+  hint?: string;
+  /** `gold` is reserved for money-in / achievement metrics (e.g. collected). */
+  tone?: "default" | "gold";
+}) {
   return (
-    <Card className="flex flex-col gap-1">
+    <Card className={cn("flex flex-col gap-1", tone === "gold" && "border-gold/25 bg-gold-50")}>
       <span className="text-sm text-black/50">{label}</span>
-      <span className="text-3xl font-bold text-emerald">{value}</span>
+      <span className={cn("text-3xl font-bold", tone === "gold" ? "text-gold-dark" : "text-emerald")}>
+        {value}
+      </span>
       {hint ? <span className="text-xs text-black/40">{hint}</span> : null}
     </Card>
+  );
+}
+
+/**
+ * Progress bar on the emerald tint track. The fill switches to gold when the
+ * target is reached — gold is reserved for achievement moments.
+ */
+export function Progress({ percent, className }: { percent: number; className?: string }) {
+  const clamped = Math.max(0, Math.min(100, percent));
+  return (
+    <div className={cn("h-3 w-full overflow-hidden rounded-full bg-emerald-50", className)}>
+      <div
+        className={cn(
+          "h-full rounded-full transition-all duration-700",
+          clamped >= 100 ? "bg-gold" : "bg-emerald",
+        )}
+        style={{ width: `${clamped}%` }}
+      />
+    </div>
   );
 }
 
@@ -115,7 +147,7 @@ export function Field({ label, children }: { label: string; children: ReactNode 
   );
 }
 
-type BadgeVariant = "neutral" | "success" | "warning" | "info" | "primary" | "danger";
+type BadgeVariant = "neutral" | "success" | "warning" | "info" | "primary" | "danger" | "gold";
 
 export function Badge({
   children,
@@ -129,11 +161,13 @@ export function Badge({
   const resolved = variant ?? tone ?? "neutral";
   const tones: Record<BadgeVariant, string> = {
     neutral: "bg-black/5 text-black/60",
-    success: "bg-emerald/10 text-emerald",
+    success: "bg-emerald-100 text-emerald",
     warning: "bg-amber-50 text-amber-700",
     info: "bg-blue-50 text-blue-700",
-    primary: "bg-emerald/10 text-emerald",
+    primary: "bg-emerald-100 text-emerald",
     danger: "bg-red-50 text-red-700",
+    /** Money-in / achievement: fulfilled pledges, receipts, goals reached. */
+    gold: "bg-gold-50 text-gold-dark",
   };
   return (
     <span className={cn("inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium", tones[resolved])}>

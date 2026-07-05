@@ -90,7 +90,7 @@ export default function AcceptInvitePage({
               <Input value={info.email ?? ""} readOnly disabled />
             </Field>
             {info.existingUser ? (
-              <p className="rounded-lg bg-emerald/5 px-3 py-2 text-sm text-black/60">
+              <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-black/60">
                 You already have a Donorly account. Accept to join this organization; sign in with
                 your existing password.
               </p>

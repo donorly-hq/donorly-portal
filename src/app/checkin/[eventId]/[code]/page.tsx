@@ -85,7 +85,7 @@ export default function SelfCheckinPage() {
                 This registration was cancelled. Please see the welcome desk.
               </p>
             ) : checkedIn ? (
-              <div className="rounded-xl bg-emerald/10 px-4 py-5 text-center">
+              <div className="rounded-xl bg-emerald-100 px-4 py-5 text-center">
                 <p className="text-2xl font-bold text-emerald">You&apos;re checked in!</p>
                 <p className="mt-1 text-sm text-black/50">
                   Welcome{info.guestName ? `, ${info.guestName.split(" ")[0]}` : ""} — enjoy the

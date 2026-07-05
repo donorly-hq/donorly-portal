@@ -540,7 +540,7 @@ export default function DonorsPage() {
             </p>
           ) : null}
           {importResult ? (
-            <div className="rounded-lg bg-emerald/10 px-3 py-2 text-sm">
+            <div className="rounded-lg bg-emerald-100 px-3 py-2 text-sm">
               <p>
                 Imported <strong>{importResult.imported}</strong>, skipped{" "}
                 <strong>{importResult.skipped}</strong> duplicate
@@ -590,7 +590,7 @@ export default function DonorsPage() {
                     {group.donors.map((d) => (
                       <label
                         key={d.id}
-                        className="flex items-center gap-2 rounded px-2 py-1 text-sm hover:bg-black/5"
+                        className="flex items-center gap-2 rounded px-2 py-1 text-sm hover:bg-emerald-50"
                       >
                         <input
                           type="radio"

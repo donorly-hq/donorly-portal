@@ -62,7 +62,7 @@ export default function AuditLogPage() {
               </tr>
             ) : (
               pageData.items.map((entry) => (
-                <tr key={entry.id} className="border-b border-black/5 hover:bg-black/[0.02]">
+                <tr key={entry.id} className="border-b border-black/5 hover:bg-emerald-50/60">
                   <td className="whitespace-nowrap px-4 py-3 text-black/60">
                     {dateFmt.format(new Date(entry.createdAt))}
                   </td>

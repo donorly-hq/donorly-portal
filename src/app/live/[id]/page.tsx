@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { readableBrandBg } from "@/lib/color";
 import type { CampaignLive } from "@/lib/types";
 
 const POLL_MS = 6000;
@@ -49,7 +50,7 @@ export default function LiveCampaignPage() {
     }
   };
 
-  const bg = session?.organizationPrimaryColor || "#083a2e";
+  const bg = readableBrandBg(session?.organizationPrimaryColor);
 
   if (loading || !session) return null;
 
@@ -108,18 +109,18 @@ function LiveBoard({ data, orgName }: { data: CampaignLive; orgName: string }) {
         <div
           className={
             "h-full rounded-full transition-all duration-1000 " +
-            (goalReached ? "bg-amber-400" : "bg-white")
+            (goalReached ? "bg-gold-light" : "bg-white")
           }
           style={{ width: `${progress}%` }}
         />
       </div>
-      <p className="mt-3 text-3xl font-bold">
+      <p className={"mt-3 text-3xl font-bold" + (goalReached ? " text-gold-light" : "")}>
         {goalReached ? "Goal reached — thank you!" : `${Math.round(progress)}% of goal`}
       </p>
 
       <div className="mt-10 grid w-full grid-cols-2 gap-6 text-center sm:grid-cols-3">
         <div>
-          <p className="text-4xl font-bold tabular-nums">{money.format(data.collected)}</p>
+          <p className="text-4xl font-bold tabular-nums text-gold-light">{money.format(data.collected)}</p>
           <p className="text-sm uppercase tracking-wide text-white/50">collected</p>
         </div>
         <div>

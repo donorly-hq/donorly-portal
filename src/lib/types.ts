@@ -12,10 +12,26 @@ export interface AuthSession {
   permissions: string[];
 }
 
-/** Login can either complete immediately or require an emailed one-time code. */
+/** One organization a user belongs to — login picker and topbar switcher. */
+export interface OrgChoice {
+  organizationId: string;
+  name: string;
+  slug: string;
+  logoUrl: string | null;
+  primaryColor: string | null;
+  roleCode: string | null;
+  roleName: string | null;
+}
+
+/**
+ * Login can complete immediately, require an emailed one-time code, or require
+ * picking one of the user's organizations.
+ */
 export interface LoginResponse extends AuthSession {
   otpRequired?: boolean;
   challengeId?: string | null;
+  orgSelectionRequired?: boolean;
+  organizations?: OrgChoice[] | null;
 }
 
 export interface Organization {
