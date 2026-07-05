@@ -33,6 +33,7 @@ const NAV: NavGroup[] = [
     orgScoped: true,
     items: [
       { label: "Campaigns",    href: "/campaigns",    permission: "campaigns.read" },
+      { label: "Quick pledge", href: "/quick-pledge", permission: "pledges.write" },
       { label: "Follow-ups",   href: "/follow-ups",   permission: "followups.read" },
       { label: "Pledge cards", href: "/pledge-cards", permission: "pledges.read" },
     ],

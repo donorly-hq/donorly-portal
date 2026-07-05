@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -34,6 +35,8 @@ export default function CampaignDetailPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [reminding, setReminding] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const load = useCallback(() => {
     Promise.all([
@@ -84,6 +87,20 @@ export default function CampaignDetailPage() {
     load();
   };
 
+  const sendReminder = async (pledge: Pledge) => {
+    setReminding(pledge.id);
+    setNotice(null);
+    try {
+      await api.post(`/pledges/${pledge.id}/remind`, {});
+      setNotice(`Reminder sent to ${donorName(pledge.donorId)}.`);
+      load();
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : "Failed to send reminder");
+    } finally {
+      setReminding(null);
+    }
+  };
+
   if (error && !dashboard) return <p className="text-red-600">{error}</p>;
   if (!dashboard) return <Spinner />;
 
@@ -98,13 +115,27 @@ export default function CampaignDetailPage() {
         title={dashboard.name}
         subtitle="Campaign overview"
         action={
-          canWritePledge ? (
-            <Button onClick={() => setModalOpen(true)} disabled={donors.length === 0}>
-              Add pledge
-            </Button>
-          ) : undefined
+          <div className="flex flex-wrap gap-2">
+            <Link href={`/live/${campaignId}`}>
+              <Button variant="secondary" type="button">Live view</Button>
+            </Link>
+            {canWritePledge ? (
+              <Link href={`/quick-pledge?campaign=${campaignId}`}>
+                <Button variant="secondary" type="button">Quick entry</Button>
+              </Link>
+            ) : null}
+            {canWritePledge ? (
+              <Button onClick={() => setModalOpen(true)} disabled={donors.length === 0}>
+                Add pledge
+              </Button>
+            ) : null}
+          </div>
         }
       />
+
+      {notice ? (
+        <p className="mt-3 rounded-lg bg-emerald/10 px-3 py-2 text-sm text-emerald">{notice}</p>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Goal" value={currency(dashboard.goalAmount)} />
@@ -137,12 +168,22 @@ export default function CampaignDetailPage() {
                 {canWritePledge ? (
                   <td className="px-4 py-3 text-right">
                     {p.status !== "fulfilled" ? (
-                      <button
-                        className="text-xs text-emerald hover:underline"
-                        onClick={() => markCollected(p)}
-                      >
-                        Mark collected
-                      </button>
+                      <span className="inline-flex gap-3">
+                        <button
+                          className="text-xs text-amber-600 hover:underline disabled:opacity-50"
+                          onClick={() => sendReminder(p)}
+                          disabled={reminding === p.id}
+                          title={p.lastReminderAt ? `Last reminded ${new Date(p.lastReminderAt).toLocaleDateString()}` : "Never reminded"}
+                        >
+                          {reminding === p.id ? "Sending..." : "Remind"}
+                        </button>
+                        <button
+                          className="text-xs text-emerald hover:underline"
+                          onClick={() => markCollected(p)}
+                        >
+                          Mark collected
+                        </button>
+                      </span>
                     ) : null}
                   </td>
                 ) : null}

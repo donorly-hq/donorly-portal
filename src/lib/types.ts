@@ -86,6 +86,30 @@ export interface YearEndStatementResponse {
   statements: YearEndDonorStatement[];
 }
 
+export interface QuickPledgeResponse {
+  pledgeId: string;
+  donorId: string;
+  donorName: string;
+  amount: number;
+  newDonor: boolean;
+}
+
+export interface CampaignLiveRecentPledge {
+  donorName: string;
+  amount: number;
+  createdAt: string;
+}
+
+export interface CampaignLive {
+  campaignId: string;
+  name: string;
+  goalAmount: number;
+  pledged: number;
+  collected: number;
+  pledgeCount: number;
+  recentPledges: CampaignLiveRecentPledge[];
+}
+
 export interface AuditLogEntry {
   id: string;
   action: string;
@@ -184,6 +208,7 @@ export interface Pledge {
   status: string;
   source: string | null;
   notes: string | null;
+  lastReminderAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
