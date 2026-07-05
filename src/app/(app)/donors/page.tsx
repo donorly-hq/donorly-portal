@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import type { Assignment, Donor, TeamMember } from "@/lib/types";
+import type { Assignment, Donor, PageResponse, TeamMember } from "@/lib/types";
 import {
   Badge,
   Button,
@@ -19,30 +19,44 @@ import {
 } from "@/components/ui";
 
 const emptyForm = { fullName: "", email: "", phone: "", city: "", donorType: "individual" };
+const PAGE_SIZE = 50;
 
 export default function DonorsPage() {
   const { hasPermission } = useAuth();
   const canWrite = hasPermission("donors.write");
   const canAssign = hasPermission("donors.assign");
   const canDelete = hasPermission("donors.delete");
-  const [donors, setDonors] = useState<Donor[] | null>(null);
+  const [pageData, setPageData] = useState<PageResponse<Donor> | null>(null);
+  const [page, setPage] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
+  // Debounced copy of `search` so we don't hit the API on every keystroke
+  const [query, setQuery] = useState("");
 
   const [assignDonor, setAssignDonor] = useState<Donor | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [assignable, setAssignable] = useState<TeamMember[]>([]);
   const [selectedAmbassador, setSelectedAmbassador] = useState("");
 
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setQuery(search);
+      setPage(0);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
   const load = useCallback(() => {
     api
-      .get<Donor[]>("/donors")
-      .then(setDonors)
+      .get<PageResponse<Donor>>(
+        `/donors?page=${page}&size=${PAGE_SIZE}&q=${encodeURIComponent(query)}`,
+      )
+      .then(setPageData)
       .catch((e) => setError(e.message));
-  }, []);
+  }, [page, query]);
 
   useEffect(() => {
     load();
@@ -101,18 +115,17 @@ export default function DonorsPage() {
     load();
   };
 
-  if (error && !donors) return <p className="text-red-600">{error}</p>;
-  if (!donors) return <Spinner />;
+  if (error && !pageData) return <p className="text-red-600">{error}</p>;
+  if (!pageData) return <Spinner />;
 
-  const filtered = donors.filter((d) =>
-    d.fullName.toLowerCase().includes(search.toLowerCase()),
-  );
+  const filtered = pageData.items;
+  const totalItems = pageData.totalItems;
 
   return (
     <div>
       <PageHeader
         title="Donors"
-        subtitle={`${donors.length} donor${donors.length === 1 ? "" : "s"}`}
+        subtitle={`${totalItems} donor${totalItems === 1 ? "" : "s"}`}
         action={
           canWrite ? <Button onClick={() => setModalOpen(true)}>Add donor</Button> : undefined
         }
@@ -187,6 +200,30 @@ export default function DonorsPage() {
           </tbody>
         </table>
       </Card>
+
+      {pageData.totalPages > 1 ? (
+        <div className="mt-4 flex items-center justify-between text-sm text-black/60">
+          <span>
+            Page {pageData.page + 1} of {pageData.totalPages}
+          </span>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              disabled={pageData.page === 0}
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={pageData.page >= pageData.totalPages - 1}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       <Modal open={modalOpen} title="Add donor" onClose={() => setModalOpen(false)}>
         <form onSubmit={handleCreate} className="space-y-4">

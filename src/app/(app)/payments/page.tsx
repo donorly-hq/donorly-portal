@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import type { Donor, PaymentRecord, Pledge } from "@/lib/types";
+import type { Donor, PageResponse, PaymentRecord, Pledge } from "@/lib/types";
 import {
   Badge,
   Button,
@@ -23,7 +23,8 @@ export default function PaymentsPage() {
   const { hasPermission } = useAuth();
   const canIssueReceipt = hasPermission("receipts.issue");
 
-  const [payments, setPayments] = useState<PaymentRecord[] | null>(null);
+  const [pageData, setPageData] = useState<PageResponse<PaymentRecord> | null>(null);
+  const [page, setPage] = useState(0);
   const [pledges, setPledges] = useState<Pledge[]>([]);
   const [donors, setDonors] = useState<Donor[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -39,12 +40,12 @@ export default function PaymentsPage() {
 
   const load = useCallback(() => {
     Promise.all([
-      api.get<PaymentRecord[]>("/payments"),
+      api.get<PageResponse<PaymentRecord>>(`/payments?page=${page}&size=50`),
       api.get<Pledge[]>("/pledges"),
       api.get<Donor[]>("/donors"),
     ])
       .then(([p, pl, d]) => {
-        setPayments(p);
+        setPageData(p);
         setPledges(pl);
         setDonors(d);
         if (pl.length) {
@@ -52,7 +53,7 @@ export default function PaymentsPage() {
         }
       })
       .catch((e) => setError(e.message));
-  }, []);
+  }, [page]);
 
   useEffect(() => {
     load();
@@ -91,8 +92,10 @@ export default function PaymentsPage() {
     load();
   };
 
-  if (error && !payments) return <p className="text-red-600">{error}</p>;
-  if (!payments) return <Spinner />;
+  if (error && !pageData) return <p className="text-red-600">{error}</p>;
+  if (!pageData) return <Spinner />;
+
+  const payments = pageData.items;
 
   return (
     <div>
@@ -154,6 +157,30 @@ export default function PaymentsPage() {
           </tbody>
         </table>
       </Card>
+
+      {pageData.totalPages > 1 ? (
+        <div className="mt-4 flex items-center justify-between text-sm text-black/60">
+          <span>
+            Page {pageData.page + 1} of {pageData.totalPages}
+          </span>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              disabled={pageData.page === 0}
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={pageData.page >= pageData.totalPages - 1}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       <Modal open={modalOpen} title="Record payment" onClose={() => setModalOpen(false)}>
         <form onSubmit={handleRecord} className="space-y-4">

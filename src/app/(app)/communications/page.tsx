@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import type { CommunicationMessage, Donor, MessageTemplate, SendResult } from "@/lib/types";
+import type { CommunicationMessage, Donor, MessageTemplate, PageResponse, SendResult } from "@/lib/types";
 import {
   Badge,
   Button,
@@ -39,8 +39,11 @@ export default function CommunicationsPage() {
   const [loading, setLoading] = useState(true);
 
   const [templates, setTemplates] = useState<MessageTemplate[]>([]);
-  const [messages, setMessages] = useState<CommunicationMessage[]>([]);
+  const [messagePage, setMessagePage] = useState<PageResponse<CommunicationMessage> | null>(null);
+  const [historyPage, setHistoryPage] = useState(0);
   const [donors, setDonors] = useState<Donor[]>([]);
+
+  const messages = messagePage?.items ?? [];
 
   const [templateModal, setTemplateModal] = useState(false);
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
@@ -76,18 +79,20 @@ export default function CommunicationsPage() {
     try {
       const [t, m, d] = await Promise.all([
         api.get<MessageTemplate[]>("/communications/templates"),
-        api.get<CommunicationMessage[]>("/communications/messages"),
+        api.get<PageResponse<CommunicationMessage>>(
+          `/communications/messages?page=${historyPage}&size=50`,
+        ),
         canSend ? api.get<Donor[]>("/donors") : Promise.resolve([] as Donor[]),
       ]);
       setTemplates(t);
-      setMessages(m);
+      setMessagePage(m);
       setDonors(d);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load communications");
     } finally {
       setLoading(false);
     }
-  }, [canSend]);
+  }, [canSend, historyPage]);
 
   useEffect(() => {
     load();
@@ -195,8 +200,11 @@ export default function CommunicationsPage() {
         setSendResult(result);
       }
       clearSelection();
-      const m = await api.get<CommunicationMessage[]>("/communications/messages");
-      setMessages(m);
+      setHistoryPage(0);
+      const m = await api.get<PageResponse<CommunicationMessage>>(
+        "/communications/messages?page=0&size=50",
+      );
+      setMessagePage(m);
       setTab("history");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Send failed");
@@ -463,6 +471,30 @@ export default function CommunicationsPage() {
             </tbody>
           </table>
         </Card>
+      ) : null}
+
+      {tab === "history" && messagePage && messagePage.totalPages > 1 ? (
+        <div className="mt-4 flex items-center justify-between text-sm text-black/60">
+          <span>
+            Page {messagePage.page + 1} of {messagePage.totalPages}
+          </span>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              disabled={messagePage.page === 0}
+              onClick={() => setHistoryPage((p) => Math.max(0, p - 1))}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={messagePage.page >= messagePage.totalPages - 1}
+              onClick={() => setHistoryPage((p) => p + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
       ) : null}
 
       <Modal

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import type { Organization, OrganizationRequest, OrgMemberSummary } from "@/lib/types";
+import type { Organization, OrganizationRequest, OrgMemberSummary, OrgUsageMetrics } from "@/lib/types";
 import {
   Badge,
   Button,
@@ -45,6 +45,19 @@ function slugify(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
+const compactCurrency = new Intl.NumberFormat("en-US", {
+  style: "currency", currency: "USD", notation: "compact", maximumFractionDigits: 1,
+});
+
+function lastActivityLabel(iso: string | null): string {
+  if (!iso) return "No activity";
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+  if (days <= 0) return "Today";
+  if (days === 1) return "Yesterday";
+  if (days < 30) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString();
+}
+
 /** Compress a File to a JPEG data URL (max 600 px, 70 % quality). */
 function compressImage(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -79,6 +92,7 @@ const EMPTY_FORM: OrganizationRequest = {
 export default function PlatformOrganizationsPage() {
   const { session, refreshBranding } = useAuth();
   const [orgs, setOrgs] = useState<Organization[]>([]);
+  const [metrics, setMetrics] = useState<Map<string, OrgUsageMetrics>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -132,6 +146,10 @@ export default function PlatformOrganizationsPage() {
       .then(setOrgs)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
+    // Metrics load separately so a slow aggregate never blocks the org list
+    api.get<OrgUsageMetrics[]>("/organizations/metrics")
+      .then((list) => setMetrics(new Map(list.map((m) => [m.organizationId, m]))))
+      .catch(() => { /* metrics are best-effort */ });
   }
   useEffect(load, []);
 
@@ -302,6 +320,8 @@ export default function PlatformOrganizationsPage() {
                 <th className="px-5 py-3">Organization</th>
                 <th className="px-5 py-3">Vertical</th>
                 <th className="px-5 py-3">Owner</th>
+                <th className="px-5 py-3">Usage</th>
+                <th className="px-5 py-3">Last activity</th>
                 <th className="px-5 py-3">Status</th>
                 <th className="px-5 py-3 text-right">Actions</th>
               </tr>
@@ -326,6 +346,26 @@ export default function PlatformOrganizationsPage() {
                     ) : (
                       <span className="text-xs text-black/30 italic">No owner yet</span>
                     )}
+                  </td>
+                  <td className="px-5 py-3">
+                    {(() => {
+                      const m = metrics.get(org.id);
+                      if (!m) return <span className="text-xs text-black/30">—</span>;
+                      return (
+                        <div className="text-xs text-black/60">
+                          <p>{m.activeMembers} members · {m.donorCount} donors</p>
+                          <p className="text-black/40">
+                            {m.activeCampaigns} active campaigns · {compactCurrency.format(m.totalCollected)} / {compactCurrency.format(m.totalPledged)} collected
+                          </p>
+                        </div>
+                      );
+                    })()}
+                  </td>
+                  <td className="px-5 py-3 text-xs text-black/50">
+                    {(() => {
+                      const m = metrics.get(org.id);
+                      return m ? lastActivityLabel(m.lastActivityAt) : "—";
+                    })()}
                   </td>
                   <td className="px-5 py-3">
                     <button

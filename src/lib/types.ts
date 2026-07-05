@@ -37,6 +37,27 @@ export interface Organization {
 /** Platform org list — same shape as Organization (no logo payload). */
 export type OrganizationSummary = Organization;
 
+/** Envelope returned by paginated list endpoints (when `page` query param is set). */
+export interface PageResponse<T> {
+  items: T[];
+  page: number;
+  size: number;
+  totalItems: number;
+  totalPages: number;
+}
+
+/** Per-tenant usage snapshot for the platform admin console. */
+export interface OrgUsageMetrics {
+  organizationId: string;
+  activeMembers: number;
+  donorCount: number;
+  activeCampaigns: number;
+  pledgeCount: number;
+  totalPledged: number;
+  totalCollected: number;
+  lastActivityAt: string | null;
+}
+
 export interface MeResponse {
   userId: string;
   fullName: string;
