@@ -1,7 +1,8 @@
 "use client";
 
-import { use, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import QRCode from "qrcode";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -31,8 +32,9 @@ import {
 const emptyGuest = { guestName: "", guestEmail: "", guestPhone: "", partySize: "1", notes: "" };
 const emptyShift = { title: "", description: "", startsAt: "", endsAt: "", slots: "1" };
 
-export default function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function EventDetailPage() {
+  const params = useParams<{ id: string }>();
+  const id = params.id;
   const { hasPermission } = useAuth();
   const canManage = hasPermission("events.manage");
   const canCheckIn = hasPermission("events.checkin");
