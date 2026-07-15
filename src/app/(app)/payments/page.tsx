@@ -13,6 +13,7 @@ import {
   Input,
   Modal,
   PageHeader,
+  Pagination,
   Select,
   Spinner,
   currency,
@@ -168,29 +169,7 @@ export default function PaymentsPage() {
         </table>
       </Card>
 
-      {pageData.totalPages > 1 ? (
-        <div className="mt-4 flex items-center justify-between text-sm text-black/60">
-          <span>
-            Page {pageData.page + 1} of {pageData.totalPages}
-          </span>
-          <div className="flex gap-2">
-            <Button
-              variant="secondary"
-              disabled={pageData.page === 0}
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="secondary"
-              disabled={pageData.page >= pageData.totalPages - 1}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      ) : null}
+      <Pagination page={pageData.page} totalPages={pageData.totalPages} onPageChange={setPage} />
 
       <Modal open={modalOpen} title="Record payment" onClose={() => setModalOpen(false)}>
         <form onSubmit={handleRecord} className="space-y-4">

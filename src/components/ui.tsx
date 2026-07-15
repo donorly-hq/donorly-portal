@@ -258,6 +258,52 @@ export function EmptyState({
   );
 }
 
+/**
+ * Prev/Next pager for the standard `PageResponse` shape (0-based `page`).
+ * Renders nothing when there is a single page or less.
+ */
+export function Pagination({
+  page,
+  totalPages,
+  totalItems,
+  onPageChange,
+  size,
+}: {
+  page: number;
+  totalPages: number;
+  totalItems?: number;
+  onPageChange: (page: number) => void;
+  size?: "sm" | "md";
+}) {
+  if (totalPages <= 1) return null;
+  return (
+    <div className="mt-4 flex items-center justify-between text-sm text-black/60">
+      <span>
+        Page {page + 1} of {totalPages}
+        {totalItems != null ? ` · ${totalItems} entries` : null}
+      </span>
+      <div className="flex gap-2">
+        <Button
+          variant="secondary"
+          size={size}
+          disabled={page === 0}
+          onClick={() => onPageChange(Math.max(0, page - 1))}
+        >
+          Previous
+        </Button>
+        <Button
+          variant="secondary"
+          size={size}
+          disabled={page >= totalPages - 1}
+          onClick={() => onPageChange(page + 1)}
+        >
+          Next
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 const TabsContext = createContext<{ value: string; onChange: (v: string) => void } | null>(null);
 
 export function Tabs({

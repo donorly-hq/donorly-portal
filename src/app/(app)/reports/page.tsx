@@ -5,8 +5,17 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import type { FundraisingReport } from "@/lib/types";
 import { Button, Card, PageHeader, Select, Spinner, StatCard, currency } from "@/components/ui";
+import { RequirePermission } from "@/components/RequirePermission";
 
 export default function ReportsPage() {
+  return (
+    <RequirePermission permission="reports.view">
+      <ReportsPageInner />
+    </RequirePermission>
+  );
+}
+
+function ReportsPageInner() {
   const [report, setReport] = useState<FundraisingReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const currentYear = new Date().getFullYear();

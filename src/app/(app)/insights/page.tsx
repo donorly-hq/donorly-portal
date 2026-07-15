@@ -15,8 +15,17 @@ import {
   Tab,
   Tabs,
 } from "@/components/ui";
+import { RequirePermission } from "@/components/RequirePermission";
 
 export default function InsightsPage() {
+  return (
+    <RequirePermission permission="ai.use">
+      <InsightsPageInner />
+    </RequirePermission>
+  );
+}
+
+function InsightsPageInner() {
   const { hasPermission } = useAuth();
   const [tab, setTab] = useState<"chat" | "org" | "history">("chat");
 

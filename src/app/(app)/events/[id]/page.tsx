@@ -28,11 +28,20 @@ import {
   dateTime,
   toInstant,
 } from "@/components/ui";
+import { RequirePermission } from "@/components/RequirePermission";
 
 const emptyGuest = { guestName: "", guestEmail: "", guestPhone: "", partySize: "1", notes: "" };
 const emptyShift = { title: "", description: "", startsAt: "", endsAt: "", slots: "1" };
 
 export default function EventDetailPage() {
+  return (
+    <RequirePermission permission="events.read">
+      <EventDetailPageInner />
+    </RequirePermission>
+  );
+}
+
+function EventDetailPageInner() {
   const params = useParams<{ id: string }>();
   const id = params.id;
   const { hasPermission } = useAuth();

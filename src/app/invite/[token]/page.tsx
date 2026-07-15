@@ -23,7 +23,7 @@ export default function AcceptInvitePage({
 
   useEffect(() => {
     api
-      .get<InvitationInfo>(`/invitations/${token}`)
+      .get<InvitationInfo>(`/invitations/${token}`, false)
       .then(setInfo)
       .catch((e) => setError(e instanceof Error ? e.message : "Could not load invitation"));
   }, [token]);

@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import QRCode from "qrcode";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { BRAND } from "@/lib/color";
 import type { CampaignDashboard, Donor, Pledge } from "@/lib/types";
 import {
   Badge,
@@ -46,7 +47,7 @@ export default function CampaignDetailPage() {
     QRCode.toDataURL(`${window.location.origin}/p/${campaignId}`, {
       width: 480,
       margin: 1,
-      color: { dark: "#083a2e", light: "#ffffff" },
+      color: { dark: BRAND.emeraldDark, light: BRAND.white },
     })
       .then(setSelfPledgeQr)
       .catch(() => setSelfPledgeQr(null));
@@ -94,9 +95,16 @@ export default function CampaignDetailPage() {
   };
 
   const markCollected = async (pledge: Pledge) => {
-    await api.patch(`/pledges/${pledge.id}`, {
-      collectedAmount: pledge.amount,
-      status: "fulfilled",
+    // Collected totals are derived from recorded payments (never set directly), so
+    // "mark collected" records a payment for the outstanding balance. The backend
+    // then fulfills the pledge and issues a receipt.
+    const outstanding = pledge.amount - (pledge.collectedAmount ?? 0);
+    if (outstanding <= 0) return;
+    await api.post(`/payments`, {
+      pledgeId: pledge.id,
+      amount: outstanding,
+      paymentMethod: pledge.paymentMethod ?? "other",
+      issueReceipt: true,
     });
     load();
   };

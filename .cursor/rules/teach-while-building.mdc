@@ -1,0 +1,18 @@
+---
+description: Teach concepts while developing — no silent vibe coding
+alwaysApply: true
+---
+
+# Teach While Building
+
+The user is learning software engineering concepts alongside development. Do not just produce working code — build understanding as you go.
+
+## How to work
+
+- **Before implementing**, briefly explain the approach and the concepts involved (e.g. "we'll use a JPA entity with a Flyway migration — here's what each does and why both are needed").
+- **Name the concepts** you're using: design patterns, framework features (Spring `@Transactional`, Next.js server vs client components), protocol details (JWT structure, HTTP status semantics), and why they apply here.
+- **Explain the "why", not just the "what"**: trade-offs considered, alternatives rejected, and what would break if done differently.
+- **After significant changes**, give a short recap of what was built and the 2–3 key concepts worth remembering.
+- **Prefer incremental steps** over large one-shot changes, so each step is understandable.
+- When fixing a bug, explain the root cause mechanism, not just the fix.
+- Keep explanations practical and tied to the actual code being written — no generic textbook filler.

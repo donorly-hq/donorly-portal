@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { BRAND } from "@/lib/color";
 
 /**
  * Root error boundary. Its main job is recovering from stale-build chunk
@@ -30,7 +31,7 @@ export default function GlobalError({
 
   return (
     <html lang="en">
-      <body style={{ margin: 0, fontFamily: "system-ui, sans-serif", backgroundColor: "#faf6ec" }}>
+      <body style={{ margin: 0, fontFamily: "system-ui, sans-serif", backgroundColor: BRAND.cream }}>
         <div
           style={{
             minHeight: "100vh",
@@ -43,8 +44,8 @@ export default function GlobalError({
             textAlign: "center",
           }}
         >
-          <p style={{ fontSize: 28, fontWeight: 700, color: "#0a4f3f", margin: 0 }}>Donorly</p>
-          <p style={{ color: "#1c2b26", margin: 0 }}>
+          <p style={{ fontSize: 28, fontWeight: 700, color: BRAND.emerald, margin: 0 }}>Donorly</p>
+          <p style={{ color: BRAND.ink, margin: 0 }}>
             {isStaleChunk
               ? "A new version of Donorly is available. Refreshing…"
               : "Something went wrong. Please try again."}
@@ -52,7 +53,7 @@ export default function GlobalError({
           <button
             onClick={() => (isStaleChunk ? window.location.reload() : reset())}
             style={{
-              backgroundColor: "#0a4f3f",
+              backgroundColor: BRAND.emerald,
               color: "white",
               border: "none",
               borderRadius: 10,

@@ -51,8 +51,6 @@ export interface Organization {
 }
 
 /** Platform org list — same shape as Organization (no logo payload). */
-export type OrganizationSummary = Organization;
-
 /** Envelope returned by paginated list endpoints (when `page` query param is set). */
 export interface PageResponse<T> {
   items: T[];

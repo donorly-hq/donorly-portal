@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth";
+import { BRAND } from "@/lib/color";
 import { ServiceWorker } from "@/components/ServiceWorker";
 
 export const metadata: Metadata = {
@@ -22,7 +23,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a4f3f",
+  themeColor: BRAND.emerald,
   width: "device-width",
   initialScale: 1,
 };

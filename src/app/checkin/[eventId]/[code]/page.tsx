@@ -17,7 +17,7 @@ export default function SelfCheckinPage() {
 
   const load = useCallback(() => {
     api
-      .get<PublicCheckinInfo>(`/public/checkin/${params.eventId}/${params.code}`)
+      .get<PublicCheckinInfo>(`/public/checkin/${params.eventId}/${params.code}`, false)
       .then(setInfo)
       .catch((e) => setError(e.message));
   }, [params.eventId, params.code]);
@@ -31,6 +31,7 @@ export default function SelfCheckinPage() {
       const updated = await api.post<PublicCheckinInfo>(
         `/public/checkin/${params.eventId}/${params.code}`,
         {},
+        false,
       );
       setInfo(updated);
     } catch (e) {
@@ -45,7 +46,7 @@ export default function SelfCheckinPage() {
   const cancelled = info?.status === "cancelled";
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f4f6f5] px-4">
+    <div className="flex min-h-screen items-center justify-center bg-emerald-50 px-4">
       <div className="w-full max-w-md rounded-2xl border border-black/5 bg-white p-8 shadow-sm">
         <p className="font-serif text-2xl font-bold text-emerald">Donorly</p>
 

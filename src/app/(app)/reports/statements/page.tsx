@@ -7,12 +7,15 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { YearEndStatementResponse } from "@/lib/types";
 import { Button, Spinner, currency } from "@/components/ui";
+import { RequirePermission } from "@/components/RequirePermission";
 
 export default function StatementsPage() {
   return (
-    <Suspense fallback={<Spinner />}>
-      <StatementsContent />
-    </Suspense>
+    <RequirePermission permission="reports.view">
+      <Suspense fallback={<Spinner />}>
+        <StatementsContent />
+      </Suspense>
+    </RequirePermission>
   );
 }
 

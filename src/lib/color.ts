@@ -8,7 +8,19 @@
  * it does.
  */
 
-const BRAND_FALLBACK = "#083a2e";
+/**
+ * Brand tokens for TS/JS contexts (QR codes, inline styles, metadata) that
+ * cannot use the Tailwind classes. Keep in sync with tailwind.config.ts.
+ */
+export const BRAND = {
+  emerald: "#0a4f3f",
+  emeraldDark: "#083a2e",
+  ink: "#1c2b26",
+  cream: "#faf6ec",
+  white: "#ffffff",
+} as const;
+
+const BRAND_FALLBACK = BRAND.emeraldDark;
 
 function parseHex(hex: string): [number, number, number] | null {
   const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(hex.trim());

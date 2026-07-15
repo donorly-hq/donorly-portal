@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import type { AuditLogEntry, PageResponse } from "@/lib/types";
-import { Badge, Button, Card, PageHeader, Spinner } from "@/components/ui";
+import { Badge, Card, PageHeader, Pagination, Spinner } from "@/components/ui";
+import { RequirePermission } from "@/components/RequirePermission";
 
 const PAGE_SIZE = 50;
 
@@ -15,6 +16,14 @@ function actionTone(action: string): "success" | "warning" | "danger" | "neutral
 }
 
 export default function AuditLogPage() {
+  return (
+    <RequirePermission permission="org.settings.manage">
+      <AuditLogPageInner />
+    </RequirePermission>
+  );
+}
+
+function AuditLogPageInner() {
   const [pageData, setPageData] = useState<PageResponse<AuditLogEntry> | null>(null);
   const [page, setPage] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -94,31 +103,13 @@ export default function AuditLogPage() {
         </table>
       </Card>
 
-      {pageData.totalPages > 1 ? (
-        <div className="flex items-center justify-between text-sm">
-          <p className="text-black/50">
-            Page {pageData.page + 1} of {pageData.totalPages} · {pageData.totalItems} entries
-          </p>
-          <div className="flex gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={page === 0}
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={page >= pageData.totalPages - 1}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      ) : null}
+      <Pagination
+        page={pageData.page}
+        totalPages={pageData.totalPages}
+        totalItems={pageData.totalItems}
+        size="sm"
+        onPageChange={setPage}
+      />
     </div>
   );
 }

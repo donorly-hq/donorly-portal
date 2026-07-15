@@ -12,6 +12,7 @@ import {
   Input,
   Modal,
   PageHeader,
+  Pagination,
   Select,
   Spinner,
   Textarea,
@@ -473,28 +474,12 @@ export default function CommunicationsPage() {
         </Card>
       ) : null}
 
-      {tab === "history" && messagePage && messagePage.totalPages > 1 ? (
-        <div className="mt-4 flex items-center justify-between text-sm text-black/60">
-          <span>
-            Page {messagePage.page + 1} of {messagePage.totalPages}
-          </span>
-          <div className="flex gap-2">
-            <Button
-              variant="secondary"
-              disabled={messagePage.page === 0}
-              onClick={() => setHistoryPage((p) => Math.max(0, p - 1))}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="secondary"
-              disabled={messagePage.page >= messagePage.totalPages - 1}
-              onClick={() => setHistoryPage((p) => p + 1)}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
+      {tab === "history" && messagePage ? (
+        <Pagination
+          page={messagePage.page}
+          totalPages={messagePage.totalPages}
+          onPageChange={setHistoryPage}
+        />
       ) : null}
 
       <Modal

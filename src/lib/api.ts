@@ -18,6 +18,27 @@ interface RequestOptions {
   auth?: boolean;
 }
 
+/**
+ * Routes that work without a login (QR self-pledge, thermometer, self-check-in,
+ * invitations, password reset). A 401 here must not bounce the visitor to the
+ * staff login page.
+ */
+const PUBLIC_ROUTE_PREFIXES = [
+  "/p/",
+  "/t/",
+  "/checkin/",
+  "/invite/",
+  "/login",
+  "/forgot-password",
+  "/reset-password",
+];
+
+function onPublicRoute(): boolean {
+  if (typeof window === "undefined") return false;
+  const path = window.location.pathname;
+  return PUBLIC_ROUTE_PREFIXES.some((prefix) => path.startsWith(prefix));
+}
+
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, auth = true } = options;
 
@@ -43,10 +64,12 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     throw new ApiError(0, "Cannot reach the server. Is the backend running?");
   }
 
-  if (response.status === 401) {
-    clearSession();
-    if (typeof window !== "undefined" && window.location.pathname !== "/login") {
-      window.location.href = "/login";
+  if (response.status === 401 && auth) {
+    if (!onPublicRoute()) {
+      clearSession();
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
     }
     throw new ApiError(401, "Your session has expired. Please sign in again.");
   }
@@ -97,7 +120,7 @@ async function download(path: string, fallbackName: string): Promise<void> {
 }
 
 export const api = {
-  get: <T>(path: string) => request<T>(path),
+  get: <T>(path: string, auth = true) => request<T>(path, { auth }),
   download,
   post: <T>(path: string, body?: unknown, auth = true) =>
     request<T>(path, { method: "POST", body, auth }),

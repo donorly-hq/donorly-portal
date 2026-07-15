@@ -53,11 +53,15 @@ export default function PublicSelfPledgePage() {
     setSaving(true);
     setError(null);
     try {
-      const result = await api.post<SelfPledgeResponse>(`/public/pledge/${params.campaignId}`, {
-        fullName: name.trim(),
-        phone: phone.trim() || undefined,
-        amount: effectiveAmount,
-      });
+      const result = await api.post<SelfPledgeResponse>(
+        `/public/pledge/${params.campaignId}`,
+        {
+          fullName: name.trim(),
+          phone: phone.trim() || undefined,
+          amount: effectiveAmount,
+        },
+        false,
+      );
       setSaved(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save pledge");

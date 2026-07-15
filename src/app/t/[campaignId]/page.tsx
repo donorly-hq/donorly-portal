@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import QRCode from "qrcode";
 import { api } from "@/lib/api";
+import { BRAND } from "@/lib/color";
 import type { PublicThermometer } from "@/lib/types";
 
 const POLL_MS = 6000;
@@ -30,7 +31,7 @@ export default function PublicThermometerPage() {
 
   const load = useCallback(() => {
     api
-      .get<PublicThermometer>(`/public/thermometer/${params.campaignId}`)
+      .get<PublicThermometer>(`/public/thermometer/${params.campaignId}`, false)
       .then((d) => {
         const keys = d.recentPledges.map((p) => `${p.donorName}-${p.createdAt}`);
         const seen = seenRef.current;
@@ -50,7 +51,7 @@ export default function PublicThermometerPage() {
     QRCode.toDataURL(`${window.location.origin}/p/${params.campaignId}`, {
       width: 320,
       margin: 1,
-      color: { dark: "#083a2e", light: "#ffffff" },
+      color: { dark: BRAND.emeraldDark, light: BRAND.white },
     })
       .then(setQr)
       .catch(() => setQr(null));
@@ -77,7 +78,7 @@ export default function PublicThermometerPage() {
   return (
     <div
       ref={containerRef}
-      className="flex min-h-screen flex-col items-center justify-center bg-[#083a2e] px-8 py-10 text-white"
+      className="flex min-h-screen flex-col items-center justify-center bg-emerald-dark px-8 py-10 text-white"
     >
       {!data ? (
         <p className="text-xl text-white/70">{error ?? "Loading…"}</p>
