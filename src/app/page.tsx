@@ -3,19 +3,18 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
+import { Landing } from "@/components/Landing";
 
 export default function HomePage() {
   const router = useRouter();
   const { session, loading } = useAuth();
 
+  // Signed-in users skip the marketing page and go straight to their dashboard.
   useEffect(() => {
-    if (loading) return;
-    router.replace(session ? "/dashboard" : "/login");
+    if (!loading && session) {
+      router.replace("/dashboard");
+    }
   }, [session, loading, router]);
 
-  return (
-    <div className="flex h-screen items-center justify-center text-emerald">
-      Loading Donorly...
-    </div>
-  );
+  return <Landing />;
 }
