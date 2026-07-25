@@ -38,7 +38,7 @@ export const STATUS_TONE: Record<string, "success" | "warning" | "danger" | "neu
 const EMPTY_FORM: OrganizationRequest = {
   name: "", slug: "", vertical: "nonprofit", timezone: "America/Chicago",
   logoUrl: "", logoData: undefined, primaryColor: BRAND.emerald,
-  ownerName: "", ownerEmail: "", ownerPassword: "",
+  ownerName: "", ownerEmail: "",
 };
 
 export function slugify(name: string) {
@@ -80,7 +80,6 @@ export function useOrgAdmin() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<OrganizationRequest>(EMPTY_FORM);
-  const [showPassword, setShowPassword] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [compressing, setCompressing] = useState(false);
@@ -97,8 +96,7 @@ export function useOrgAdmin() {
   const [orgMembers, setOrgMembers] = useState<OrgMemberSummary[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [promoteUserId, setPromoteUserId] = useState("");
-  const [ownerForm, setOwnerForm] = useState({ ownerName: "", ownerEmail: "", ownerPassword: "" });
-  const [showOwnerPassword, setShowOwnerPassword] = useState(false);
+  const [ownerForm, setOwnerForm] = useState({ ownerName: "", ownerEmail: "" });
   const [savingOwner, setSavingOwner] = useState(false);
   const [ownerError, setOwnerError] = useState<string | null>(null);
 
@@ -115,7 +113,6 @@ export function useOrgAdmin() {
     setEditingId(null);
     setForm(EMPTY_FORM);
     setFormError(null);
-    setShowPassword(false);
     if (fileInputRef.current) fileInputRef.current.value = "";
     setModalOpen(true);
   }
@@ -141,10 +138,9 @@ export function useOrgAdmin() {
   function openOwnerModal(org: Organization) {
     setOwnerOrg(org);
     setOwnerMode("promote");
-    setOwnerForm({ ownerName: "", ownerEmail: "", ownerPassword: "" });
+    setOwnerForm({ ownerName: "", ownerEmail: "" });
     setPromoteUserId("");
     setOwnerError(null);
-    setShowOwnerPassword(false);
     setLoadingMembers(true);
     api.get<OrgMemberSummary[]>(`/organizations/${org.id}/members`)
       .then((members) => {
@@ -195,7 +191,6 @@ export function useOrgAdmin() {
       // strip owner fields on update
       delete payload.ownerName;
       delete payload.ownerEmail;
-      delete payload.ownerPassword;
     }
     try {
       if (editingId) {
@@ -225,7 +220,6 @@ export function useOrgAdmin() {
       const payload = {
         ownerName: ownerForm.ownerName,
         ownerEmail: ownerForm.ownerEmail,
-        ownerPassword: ownerForm.ownerPassword || undefined,
       };
       const updated = await api.put<Organization>(`/organizations/${ownerOrg.id}/owner`, payload);
       setOrgs((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
@@ -276,12 +270,12 @@ export function useOrgAdmin() {
     orgs, loading, error,
     openAdd, openEdit, openStatus, openOwnerModal,
     modals: {
-      modalOpen, setModalOpen, editingId, form, showPassword, setShowPassword,
+      modalOpen, setModalOpen, editingId, form,
       saving, formError, compressing, fileInputRef,
       statusOrg, setStatusOrg, newStatus, setNewStatus, savingStatus,
       ownerOrg, setOwnerOrg, ownerMode, setOwnerMode, orgMembers, loadingMembers,
       promoteUserId, setPromoteUserId, ownerForm, setOwnerForm,
-      showOwnerPassword, setShowOwnerPassword, savingOwner, ownerError,
+      savingOwner, ownerError,
       setField, handleNameChange, handleLogoUpload, handleSubmit,
       handleSetOwner, handlePromoteOwner, handleStatusSave,
     },
@@ -430,29 +424,13 @@ export function OrgAdminModals({ admin }: { admin: OrgAdmin }) {
             <>
               <div className="border-t border-black/5 pt-2">
                 <p className="text-xs font-semibold uppercase tracking-wide text-black/40">Owner Login Account</p>
-                <p className="text-xs text-black/40 mt-0.5">This person will be the Organization Owner and can log in immediately.</p>
+                <p className="text-xs text-black/40 mt-0.5">This person will be the Organization Owner. They&apos;ll receive an email with a link to set their password and complete registration.</p>
               </div>
               <Field label="Full Name *">
                 <Input required value={m.form.ownerName ?? ""} onChange={(e) => m.setField("ownerName", e.target.value)} placeholder="e.g. Dr. Ahmed Khan" />
               </Field>
               <Field label="Email Address *">
                 <Input required type="email" value={m.form.ownerEmail ?? ""} onChange={(e) => m.setField("ownerEmail", e.target.value)} placeholder="e.g. ahmed@hayatclinic.org" />
-              </Field>
-              <Field label="Password *">
-                <div className="relative">
-                  <Input
-                    required
-                    type={m.showPassword ? "text" : "password"}
-                    value={m.form.ownerPassword ?? ""}
-                    onChange={(e) => m.setField("ownerPassword", e.target.value)}
-                    placeholder="Minimum 8 characters"
-                    minLength={8}
-                    className="pr-16"
-                  />
-                  <button type="button" onClick={() => m.setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-black/40 hover:text-black">
-                    {m.showPassword ? "Hide" : "Show"}
-                  </button>
-                </div>
               </Field>
             </>
           )}
@@ -526,28 +504,13 @@ export function OrgAdminModals({ admin }: { admin: OrgAdmin }) {
             ) : (
               <form onSubmit={m.handleSetOwner} className="flex flex-col gap-4">
                 <p className="text-xs text-black/40">
-                  Creates a new login or links an existing Donorly account by email. Password is only required for new accounts.
+                  Links an existing Donorly account by email, or creates a new one. New accounts receive an email with a link to set their password.
                 </p>
                 <Field label="Full Name *">
                   <Input required value={m.ownerForm.ownerName} onChange={(e) => m.setOwnerForm((f) => ({ ...f, ownerName: e.target.value }))} placeholder="e.g. Dr. Ahmed Khan" />
                 </Field>
                 <Field label="Email Address *">
                   <Input required type="email" value={m.ownerForm.ownerEmail} onChange={(e) => m.setOwnerForm((f) => ({ ...f, ownerEmail: e.target.value }))} placeholder="e.g. ahmed@hayatclinic.org" />
-                </Field>
-                <Field label="Password (new accounts only)">
-                  <div className="relative">
-                    <Input
-                      type={m.showOwnerPassword ? "text" : "password"}
-                      value={m.ownerForm.ownerPassword}
-                      onChange={(e) => m.setOwnerForm((f) => ({ ...f, ownerPassword: e.target.value }))}
-                      placeholder="Minimum 8 characters"
-                      minLength={8}
-                      className="pr-16"
-                    />
-                    <button type="button" onClick={() => m.setShowOwnerPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-black/40 hover:text-black">
-                      {m.showOwnerPassword ? "Hide" : "Show"}
-                    </button>
-                  </div>
                 </Field>
                 {m.ownerError && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{m.ownerError}</p>}
                 <div className="flex justify-end gap-3">

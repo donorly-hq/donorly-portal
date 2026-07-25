@@ -191,7 +191,6 @@ export interface OrganizationRequest {
   // owner (only used on create)
   ownerName?: string;
   ownerEmail?: string;
-  ownerPassword?: string;
 }
 
 export interface OrgMemberSummary {
