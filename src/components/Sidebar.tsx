@@ -25,6 +25,11 @@ const NAV: NavGroup[] = [
     items: [{ label: "Dashboard", href: "/dashboard" }],
   },
   {
+    heading: "My work",
+    orgScoped: true,
+    items: [{ label: "My Shift", href: "/my-shift", permission: "followups.read" }],
+  },
+  {
     heading: "People",
     orgScoped: true,
     items: [{ label: "Donors", href: "/donors", permission: "donors.read" }],

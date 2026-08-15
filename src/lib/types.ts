@@ -268,6 +268,87 @@ export interface OrgDashboard {
   totalCollected: number;
   remaining: number;
   openFollowUps: number;
+  outstandingPledges: number;
+  campaigns: {
+    id: string;
+    name: string;
+    status: string;
+    goalAmount: number;
+    pledged: number;
+    collected: number;
+    endDate: string | null;
+  }[];
+  recentPayments: {
+    id: string;
+    donorName: string;
+    amount: number;
+    paymentMethod: string | null;
+    paymentDate: string;
+  }[];
+  dueFollowUps: {
+    id: string;
+    donorId: string;
+    donorName: string;
+    dueAt: string | null;
+    notes: string | null;
+  }[];
+}
+
+export interface SetupProgressItem {
+  key: string;
+  title: string;
+  description: string;
+  complete: boolean;
+  ctaLabel: string | null;
+  ctaRoute: string | null;
+}
+
+export interface SetupProgress {
+  percent: number;
+  completedCount: number;
+  totalCount: number;
+  items: SetupProgressItem[];
+}
+
+export interface SuggestedReminder {
+  pledgeId: string;
+  donorId: string;
+  donorName: string;
+  donorEmail: string;
+  campaignName: string;
+  amount: number;
+  collected: number;
+  outstanding: number;
+  lastReminderAt: string | null;
+  pledgedAt: string;
+  emailSubject: string;
+  emailBody: string;
+}
+
+export interface Suggestion {
+  key: string;
+  severity: "info" | "warning" | "critical";
+  title: string;
+  message: string;
+  actionLabel: string | null;
+  actionRoute: string | null;
+}
+
+export interface PlatformOrgOverview {
+  id: string;
+  name: string;
+  slug: string;
+  vertical: string;
+  status: string;
+  primaryColor: string | null;
+  hasLogo: boolean;
+  setupPercent: number;
+  activeMembers: number;
+  donorCount: number;
+  activeCampaigns: number;
+  goalTotal: number;
+  pledgedTotal: number;
+  collectedTotal: number;
 }
 
 export interface CampaignManagerDashboard {
@@ -602,6 +683,23 @@ export interface PledgeCard {
   verificationStatus: string;
   createdBy: string | null;
   createdAt: string;
+}
+
+/** AI-suggested field values read from a pledge card photo (POST /pledge-cards/scan). */
+export interface PledgeCardScan {
+  donorFullName: string | null;
+  donorEmail: string | null;
+  donorPhone: string | null;
+  donorCity: string | null;
+  donorType: string | null;
+  amount: number | null;
+  paymentMethod: string | null;
+  campaignId: string | null;
+  campaignName: string | null;
+  matchedDonorId: string | null;
+  matchedDonorName: string | null;
+  notes: string | null;
+  extractedJson: string;
 }
 
 export interface PaymentRecord {

@@ -21,6 +21,7 @@ import {
   currency,
   dateTime,
 } from "@/components/ui";
+import { DonorAiPanel } from "@/components/donors/DonorAiPanel";
 
 export default function DonorDetailPage() {
   const params = useParams<{ id: string }>();
@@ -199,6 +200,8 @@ export default function DonorDetailPage() {
         <Tab value="pledges" label={`Pledges (${detail.pledges.length})`} />
         <Tab value="payments" label={`Payments (${detail.payments.length})`} />
       </Tabs>
+
+      {tab === "overview" && <DonorAiPanel detail={detail} onChanged={load} />}
 
       {tab === "overview" && (
         <div className="grid md:grid-cols-2 gap-6">

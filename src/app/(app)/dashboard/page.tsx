@@ -7,7 +7,10 @@ import type {
   AmbassadorDashboard,
   CampaignManagerDashboard,
   OrgDashboard,
+  SetupProgress,
 } from "@/lib/types";
+import { OrgCommandCenter } from "@/components/dashboard/OrgCommandCenter";
+import { PlatformOrgTiles } from "@/components/dashboard/PlatformOrgTiles";
 import {
   Badge,
   Button,
@@ -85,6 +88,13 @@ function PlatformAdminDashboard({ name }: { name: string }) {
         <StatCard label="No owner yet" value={noOwner} />
       </div>
 
+      {/* ── Org tiles: setup progress + fundraising thermometer ──────────── */}
+      <div className="mb-4">
+        <h2 className="text-base font-semibold text-black/80">Organizations at a glance</h2>
+        <p className="text-xs text-black/40 mt-0.5">Onboarding progress and fundraising per tenant</p>
+      </div>
+      <PlatformOrgTiles />
+
       {/* ── Organizations table ───────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-4">
         <div>
@@ -136,35 +146,6 @@ function PlatformAdminDashboard({ name }: { name: string }) {
       )}
 
       <OrgAdminModals admin={admin} />
-    </>
-  );
-}
-
-// ─── org-wide snapshot ────────────────────────────────────────────────────────
-function OrgSnapshot({ name, data }: { name: string; data: OrgDashboard }) {
-  const progress =
-    data.totalPledged > 0 ? Math.round((data.totalCollected / data.totalPledged) * 100) : 0;
-
-  return (
-    <>
-      <p className="mb-4 text-sm text-black/50">
-        Welcome back, <span className="font-semibold text-black/70">{name}</span>
-      </p>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <StatCard label="Total donors" value={data.totalDonors} />
-        <StatCard label="Active campaigns" value={data.totalCampaigns} />
-        <StatCard label="Open follow-ups" value={data.openFollowUps} />
-        <StatCard label="Total pledged" value={currency(data.totalPledged)} />
-        <StatCard label="Total collected" value={currency(data.totalCollected)} tone="gold" />
-        <StatCard label="Outstanding" value={currency(data.remaining)} hint={`${progress}% collected`} />
-      </div>
-      <div className="mt-6 rounded-2xl border border-black/5 bg-white p-6 shadow-sm">
-        <p className="mb-2 text-sm font-medium text-black/60">Collection progress</p>
-        <Progress percent={progress} />
-        <p className="mt-2 text-sm text-black/50">
-          {currency(data.totalCollected)} collected of {currency(data.totalPledged)} pledged
-        </p>
-      </div>
     </>
   );
 }
@@ -367,6 +348,7 @@ export default function DashboardPage() {
   const isCampaignManager = session?.roleCode === "campaign_manager";
 
   const [orgData, setOrgData] = useState<OrgDashboard | null>(null);
+  const [setupData, setSetupData] = useState<SetupProgress | null>(null);
   const [myData, setMyData] = useState<AmbassadorDashboard | null>(null);
   const [cmData, setCmData] = useState<CampaignManagerDashboard | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -375,6 +357,8 @@ export default function DashboardPage() {
     if (isPlatformAdmin) return; // platform admin loads its own data
     if (canViewReports && !isCampaignManager) {
       api.get<OrgDashboard>("/dashboard").then(setOrgData).catch((e) => setError(e.message));
+      // Setup checklist is enrichment — the dashboard still renders if it fails.
+      api.get<SetupProgress>("/dashboard/setup").then(setSetupData).catch(() => {});
     } else if (isCampaignManager) {
       api.get<CampaignManagerDashboard>("/dashboard/campaign-manager").then(setCmData).catch((e) => setError(e.message));
     } else {
@@ -405,7 +389,12 @@ export default function DashboardPage() {
       )}
 
       {!isPlatformAdmin && canViewReports && !isCampaignManager && orgData && (
-        <OrgSnapshot name={session?.fullName ?? ""} data={orgData} />
+        <OrgCommandCenter
+          name={session?.fullName ?? ""}
+          orgName={session?.organizationName ?? "your organization"}
+          data={orgData}
+          setup={setupData}
+        />
       )}
 
       {!isPlatformAdmin && isCampaignManager && cmData && (
