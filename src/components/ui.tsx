@@ -104,7 +104,8 @@ export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElem
   return (
     <input
       className={cn(
-        "w-full rounded-lg border border-black/15 bg-white px-3 py-2 text-sm outline-none focus:border-emerald focus:ring-1 focus:ring-emerald",
+        // text-base on phones: mobile browsers auto-zoom the page when focusing inputs under 16px
+        "w-full rounded-lg border border-black/15 bg-white px-3 py-2 text-base outline-none focus:border-emerald focus:ring-1 focus:ring-emerald sm:text-sm",
         className,
       )}
       {...props}
@@ -116,7 +117,7 @@ export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTex
   return (
     <textarea
       className={cn(
-        "w-full rounded-lg border border-black/15 bg-white px-3 py-2 text-sm outline-none focus:border-emerald focus:ring-1 focus:ring-emerald",
+        "w-full rounded-lg border border-black/15 bg-white px-3 py-2 text-base outline-none focus:border-emerald focus:ring-1 focus:ring-emerald sm:text-sm",
         className,
       )}
       {...props}
@@ -128,7 +129,7 @@ export function Select({ className, children, ...props }: SelectHTMLAttributes<H
   return (
     <select
       className={cn(
-        "w-full rounded-lg border border-black/15 bg-white px-3 py-2 text-sm outline-none focus:border-emerald focus:ring-1 focus:ring-emerald",
+        "w-full rounded-lg border border-black/15 bg-white px-3 py-2 text-base outline-none focus:border-emerald focus:ring-1 focus:ring-emerald sm:text-sm",
         className,
       )}
       {...props}
@@ -191,7 +192,7 @@ export function Modal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
       <div
-        className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
+        className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto overscroll-contain rounded-2xl bg-white p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
