@@ -65,7 +65,10 @@ export interface DonorImportRow {
   email?: string;
   phone?: string;
   city?: string;
+  state?: string;
+  address?: string;
   donorType?: string;
+  bucket?: string;
 }
 
 export interface DonorImportResult {
@@ -209,9 +212,18 @@ export interface Donor {
   email: string | null;
   phone: string | null;
   city: string | null;
+  state: string | null;
+  address: string | null;
   donorType: string;
   status: string;
   lifetimeGiving: number;
+  /** Point of contact — staff member responsible for this donor. */
+  assignedToUserId: string | null;
+  majorDonor: boolean;
+  /** confirmed | potential | re_registering */
+  bucket: string;
+  /** ok | non_compliant | claims_paid | non_responsive */
+  complianceStatus: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -398,6 +410,39 @@ export interface CampaignDashboard {
   collected: number;
   remaining: number;
   pledgeCount: number;
+  status: string;
+  startDate: string | null;
+  endDate: string | null;
+  /** Days until the end date, floored at 0; null when no end date is set. */
+  daysRemaining: number | null;
+  donorsTargeted: number;
+}
+
+/** One audience selector on a campaign: exactly one of donor/tag/state is set. */
+export interface CampaignTargetRow {
+  id: string;
+  donorId: string | null;
+  donorName: string | null;
+  tagId: string | null;
+  tagName: string | null;
+  state: string | null;
+}
+
+export interface CampaignAudience {
+  targets: CampaignTargetRow[];
+  /** Distinct donors resolved from all selectors (live count). */
+  targetedDonorCount: number;
+}
+
+export interface CampaignMessaging {
+  campaignId: string;
+  messageContent: string | null;
+  flyerUrl: string | null;
+  paymentLink: string | null;
+  frequency: string;
+  channels: string[];
+  personalized: boolean;
+  lastSentAt: string | null;
 }
 
 // ---- Phase 2: Team & roles -------------------------------------------
@@ -592,6 +637,8 @@ export interface CommunicationMessage {
   body: string;
   status: string;
   errorMessage: string | null;
+  direction: string | null;
+  campaignId: string | null;
   sentAt: string | null;
   createdAt: string;
 }
@@ -681,6 +728,11 @@ export interface PledgeCard {
   paymentMethod: string | null;
   notes: string | null;
   verificationStatus: string;
+  pointOfContactUserId: string | null;
+  pointOfContactName: string | null;
+  followUpCount: number;
+  pendingSince: string | null;
+  batch: string | null;
   createdBy: string | null;
   createdAt: string;
 }
@@ -704,7 +756,10 @@ export interface PledgeCardScan {
 
 export interface PaymentRecord {
   id: string;
-  pledgeId: string;
+  /** Null for direct "takaza" campaign donations that have no pledge. */
+  pledgeId: string | null;
+  campaignId: string | null;
+  campaignName: string | null;
   donorId: string;
   donorName: string | null;
   amount: number;
@@ -714,6 +769,9 @@ export interface PaymentRecord {
   notes: string | null;
   recordedBy: string | null;
   createdAt: string;
+  /** "Day N of M" relative to the campaign timeline (null without campaign dates). */
+  campaignDay: number | null;
+  campaignDays: number | null;
   receipt: Receipt | null;
 }
 

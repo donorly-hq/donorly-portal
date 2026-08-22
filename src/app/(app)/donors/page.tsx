@@ -9,6 +9,7 @@ import type {
   Donor,
   DonorImportResult,
   DonorImportRow,
+  DonorTag,
   DuplicateGroup,
   PageResponse,
   TeamMember,
@@ -27,8 +28,43 @@ import {
   currency,
 } from "@/components/ui";
 
-const emptyForm = { fullName: "", email: "", phone: "", city: "", donorType: "individual" };
+const emptyForm = {
+  fullName: "",
+  email: "",
+  phone: "",
+  city: "",
+  state: "",
+  address: "",
+  donorType: "individual",
+  bucket: "confirmed",
+  complianceStatus: "ok",
+  assignedToUserId: "",
+  majorDonor: false,
+};
 const PAGE_SIZE = 50;
+
+const emptyFilters = {
+  tagId: "",
+  state: "",
+  bucket: "",
+  compliance: "",
+  minAmount: "",
+  maxAmount: "",
+  majorOnly: false,
+};
+
+const BUCKET_LABELS: Record<string, string> = {
+  confirmed: "Confirmed",
+  potential: "Potential",
+  re_registering: "Re-registering",
+};
+
+const COMPLIANCE_LABELS: Record<string, string> = {
+  ok: "OK",
+  non_compliant: "Non-compliant",
+  claims_paid: "Claims paid",
+  non_responsive: "Non-responsive",
+};
 
 /** Minimal CSV parser handling quoted fields, CRLF, and escaped quotes. */
 function parseCsv(text: string): string[][] {
@@ -61,7 +97,7 @@ function parseCsv(text: string): string[][] {
   return rows;
 }
 
-/** Maps arbitrary CSV headers to donor fields (name/email/phone/city/type). */
+/** Maps arbitrary CSV headers to donor fields (name/email/phone/city/state/address/type/bucket). */
 function mapCsvToDonors(rows: string[][]): { donors: DonorImportRow[]; problems: string[] } {
   if (rows.length < 2) return { donors: [], problems: ["File needs a header row and at least one data row."] };
   const headers = rows[0].map((h) => h.trim().toLowerCase());
@@ -71,7 +107,10 @@ function mapCsvToDonors(rows: string[][]): { donors: DonorImportRow[]; problems:
   const emailIdx = col("email", "e-mail");
   const phoneIdx = col("phone", "mobile", "cell");
   const cityIdx = col("city", "town");
+  const stateIdx = col("state", "province");
+  const addressIdx = col("address", "street");
   const typeIdx = col("type");
+  const bucketIdx = col("bucket");
   if (nameIdx === -1) return { donors: [], problems: ["Could not find a name column in the header row."] };
 
   const donors: DonorImportRow[] = [];
@@ -87,7 +126,10 @@ function mapCsvToDonors(rows: string[][]): { donors: DonorImportRow[]; problems:
       email: emailIdx >= 0 ? (r[emailIdx] ?? "").trim() || undefined : undefined,
       phone: phoneIdx >= 0 ? (r[phoneIdx] ?? "").trim() || undefined : undefined,
       city: cityIdx >= 0 ? (r[cityIdx] ?? "").trim() || undefined : undefined,
+      state: stateIdx >= 0 ? (r[stateIdx] ?? "").trim() || undefined : undefined,
+      address: addressIdx >= 0 ? (r[addressIdx] ?? "").trim() || undefined : undefined,
       donorType: typeIdx >= 0 ? (r[typeIdx] ?? "").trim() || undefined : undefined,
+      bucket: bucketIdx >= 0 ? (r[bucketIdx] ?? "").trim() || undefined : undefined,
     });
   });
   return { donors, problems };
@@ -107,6 +149,9 @@ export default function DonorsPage() {
   const [search, setSearch] = useState("");
   // Debounced copy of `search` so we don't hit the API on every keystroke
   const [query, setQuery] = useState("");
+  const [filters, setFilters] = useState(emptyFilters);
+  const [tags, setTags] = useState<DonorTag[]>([]);
+  const [members, setMembers] = useState<TeamMember[]>([]);
 
   const [assignDonor, setAssignDonor] = useState<Donor | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -119,6 +164,8 @@ export default function DonorsPage() {
   const [importProblems, setImportProblems] = useState<string[]>([]);
   const [importResult, setImportResult] = useState<DonorImportResult | null>(null);
   const [importing, setImporting] = useState(false);
+  const [importGroupName, setImportGroupName] = useState("");
+  const [importDefaultBucket, setImportDefaultBucket] = useState("");
 
   // duplicates
   const [dupOpen, setDupOpen] = useState(false);
@@ -136,17 +183,36 @@ export default function DonorsPage() {
   }, [search]);
 
   const load = useCallback(() => {
+    const params = new URLSearchParams({
+      page: String(page),
+      size: String(PAGE_SIZE),
+      q: query,
+    });
+    if (filters.tagId) params.set("tagId", filters.tagId);
+    if (filters.state) params.set("state", filters.state);
+    if (filters.bucket) params.set("bucket", filters.bucket);
+    if (filters.compliance) params.set("compliance", filters.compliance);
+    if (filters.minAmount) params.set("minAmount", filters.minAmount);
+    if (filters.maxAmount) params.set("maxAmount", filters.maxAmount);
+    if (filters.majorOnly) params.set("majorOnly", "true");
     api
-      .get<PageResponse<Donor>>(
-        `/donors?page=${page}&size=${PAGE_SIZE}&q=${encodeURIComponent(query)}`,
-      )
+      .get<PageResponse<Donor>>(`/donors?${params.toString()}`)
       .then(setPageData)
       .catch((e) => setError(e.message));
-  }, [page, query]);
+  }, [page, query, filters]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    api.get<DonorTag[]>("/donor-tags").then(setTags).catch(() => setTags([]));
+    api.get<TeamMember[]>("/team/assignable").then(setMembers).catch(() => setMembers([]));
+  }, []);
+
+  const filtersActive =
+    filters.tagId || filters.state || filters.bucket || filters.compliance ||
+    filters.minAmount || filters.maxAmount || filters.majorOnly;
 
   const openAssign = async (donor: Donor) => {
     setAssignDonor(donor);
@@ -184,7 +250,10 @@ export default function DonorsPage() {
     setSaving(true);
     setError(null);
     try {
-      await api.post("/donors", form);
+      await api.post("/donors", {
+        ...form,
+        assignedToUserId: form.assignedToUserId || undefined,
+      });
       setForm(emptyForm);
       setModalOpen(false);
       load();
@@ -216,6 +285,8 @@ export default function DonorsPage() {
     setImportRows([]);
     setImportProblems([]);
     setImportResult(null);
+    setImportGroupName("");
+    setImportDefaultBucket("");
     setImportOpen(true);
   };
 
@@ -235,6 +306,8 @@ export default function DonorsPage() {
     try {
       const result = await api.post<DonorImportResult>("/donors/import", {
         donors: importRows.slice(0, 1000),
+        groupName: importGroupName || undefined,
+        defaultBucket: importDefaultBucket || undefined,
       });
       setImportResult(result);
       setImportRows([]);
@@ -311,12 +384,82 @@ export default function DonorsPage() {
         }
       />
 
-      <div className="mb-4 max-w-xs">
+      <div className="mb-4 flex flex-wrap items-end gap-3">
+        <div className="w-56">
+          <Input
+            placeholder="Search donors..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <Select
+          className="w-40"
+          value={filters.tagId}
+          onChange={(e) => { setFilters({ ...filters, tagId: e.target.value }); setPage(0); }}
+        >
+          <option value="">All groups</option>
+          {tags.map((t) => (
+            <option key={t.id} value={t.id}>{t.name}</option>
+          ))}
+        </Select>
         <Input
-          placeholder="Search donors..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          className="w-32"
+          placeholder="State"
+          value={filters.state}
+          onChange={(e) => { setFilters({ ...filters, state: e.target.value }); setPage(0); }}
         />
+        <Select
+          className="w-40"
+          value={filters.bucket}
+          onChange={(e) => { setFilters({ ...filters, bucket: e.target.value }); setPage(0); }}
+        >
+          <option value="">All buckets</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="potential">Potential</option>
+          <option value="re_registering">Re-registering</option>
+        </Select>
+        <Select
+          className="w-44"
+          value={filters.compliance}
+          onChange={(e) => { setFilters({ ...filters, compliance: e.target.value }); setPage(0); }}
+        >
+          <option value="">Any compliance</option>
+          <option value="ok">OK</option>
+          <option value="non_compliant">Non-compliant</option>
+          <option value="claims_paid">Claims paid</option>
+          <option value="non_responsive">Non-responsive</option>
+        </Select>
+        <Input
+          className="w-28"
+          type="number"
+          placeholder="Min $"
+          value={filters.minAmount}
+          onChange={(e) => { setFilters({ ...filters, minAmount: e.target.value }); setPage(0); }}
+        />
+        <Input
+          className="w-28"
+          type="number"
+          placeholder="Max $"
+          value={filters.maxAmount}
+          onChange={(e) => { setFilters({ ...filters, maxAmount: e.target.value }); setPage(0); }}
+        />
+        <label className="flex h-9 items-center gap-2 text-sm text-black/70">
+          <input
+            type="checkbox"
+            checked={filters.majorOnly}
+            onChange={(e) => { setFilters({ ...filters, majorOnly: e.target.checked }); setPage(0); }}
+            className="h-4 w-4 accent-emerald-700"
+          />
+          High value only
+        </label>
+        {filtersActive ? (
+          <button
+            className="text-xs text-emerald hover:underline"
+            onClick={() => { setFilters(emptyFilters); setPage(0); }}
+          >
+            Clear filters
+          </button>
+        ) : null}
       </div>
 
       <Card className="overflow-x-auto p-0">
@@ -325,7 +468,8 @@ export default function DonorsPage() {
             <tr className="border-b border-black/5 text-left text-black/50">
               <th className="px-4 py-3 font-medium">Name</th>
               <th className="px-4 py-3 font-medium">Contact</th>
-              <th className="px-4 py-3 font-medium">City</th>
+              <th className="px-4 py-3 font-medium">Location</th>
+              <th className="px-4 py-3 font-medium">Bucket</th>
               <th className="px-4 py-3 font-medium">Lifetime giving</th>
               <th className="px-4 py-3 font-medium">Status</th>
               {canWrite ? <th className="px-4 py-3" /> : null}
@@ -338,12 +482,32 @@ export default function DonorsPage() {
                   <Link href={`/donors/${d.id}`} className="hover:underline">
                     {d.fullName}
                   </Link>
+                  {d.majorDonor ? (
+                    <span
+                      className="ml-2 rounded-full bg-gold-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gold-dark"
+                      title="Major donor"
+                    >
+                      major
+                    </span>
+                  ) : null}
                 </td>
                 <td className="px-4 py-3 text-black/60">
                   {d.email ?? "—"}
                   {d.phone ? <span className="block text-xs text-black/40">{d.phone}</span> : null}
                 </td>
-                <td className="px-4 py-3 text-black/60">{d.city ?? "—"}</td>
+                <td className="px-4 py-3 text-black/60">
+                  {[d.city, d.state].filter(Boolean).join(", ") || "—"}
+                </td>
+                <td className="px-4 py-3">
+                  <Badge tone={d.bucket === "confirmed" ? "success" : "neutral"}>
+                    {BUCKET_LABELS[d.bucket] ?? d.bucket}
+                  </Badge>
+                  {d.complianceStatus !== "ok" ? (
+                    <span className="block text-[10px] text-red-600">
+                      {COMPLIANCE_LABELS[d.complianceStatus] ?? d.complianceStatus}
+                    </span>
+                  ) : null}
+                </td>
                 <td className="px-4 py-3">{currency(d.lifetimeGiving)}</td>
                 <td className="px-4 py-3">
                   <Badge tone={d.status === "active" ? "success" : "neutral"}>{d.status}</Badge>
@@ -372,7 +536,7 @@ export default function DonorsPage() {
             ))}
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-10 text-center text-black/40">
+                <td colSpan={7} className="px-4 py-10 text-center text-black/40">
                   No donors found.
                 </td>
               </tr>
@@ -414,6 +578,20 @@ export default function DonorsPage() {
                 onChange={(e) => setForm({ ...form, city: e.target.value })}
               />
             </Field>
+            <Field label="State">
+              <Input
+                value={form.state}
+                onChange={(e) => setForm({ ...form, state: e.target.value })}
+              />
+            </Field>
+          </div>
+          <Field label="Address">
+            <Input
+              value={form.address}
+              onChange={(e) => setForm({ ...form, address: e.target.value })}
+            />
+          </Field>
+          <div className="grid grid-cols-2 gap-4">
             <Field label="Type">
               <Select
                 value={form.donorType}
@@ -425,7 +603,39 @@ export default function DonorsPage() {
                 <option value="anonymous">Anonymous</option>
               </Select>
             </Field>
+            <Field label="Bucket">
+              <Select
+                value={form.bucket}
+                onChange={(e) => setForm({ ...form, bucket: e.target.value })}
+              >
+                <option value="confirmed">Confirmed</option>
+                <option value="potential">Potential</option>
+                <option value="re_registering">Re-registering</option>
+              </Select>
+            </Field>
           </div>
+          <Field label="Point of contact">
+            <Select
+              value={form.assignedToUserId}
+              onChange={(e) => setForm({ ...form, assignedToUserId: e.target.value })}
+            >
+              <option value="">Not assigned</option>
+              {members.map((m) => (
+                <option key={m.userId} value={m.userId}>
+                  {m.fullName} {m.roleName ? `(${m.roleName})` : ""}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={form.majorDonor}
+              onChange={(e) => setForm({ ...form, majorDonor: e.target.checked })}
+              className="h-4 w-4 accent-emerald-700"
+            />
+            Major donor (high value)
+          </label>
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>
@@ -495,9 +705,30 @@ export default function DonorsPage() {
           <p className="text-sm text-black/60">
             Upload a CSV with a header row. Columns are matched by name — it needs a
             <strong> name</strong> column; <strong>email</strong>, <strong>phone</strong>,{" "}
-            <strong>city</strong>, and <strong>type</strong> are optional. Existing donors
+            <strong>city</strong>, <strong>state</strong>, <strong>address</strong>,{" "}
+            <strong>type</strong>, and <strong>bucket</strong> are optional. Existing donors
             (same email, or same name and phone) are skipped automatically.
           </p>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Add all to group (optional)">
+              <Input
+                value={importGroupName}
+                onChange={(e) => setImportGroupName(e.target.value)}
+                placeholder='e.g. "Pilot 1200"'
+              />
+            </Field>
+            <Field label="Default bucket (optional)">
+              <Select
+                value={importDefaultBucket}
+                onChange={(e) => setImportDefaultBucket(e.target.value)}
+              >
+                <option value="">Keep default (confirmed)</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="potential">Potential</option>
+                <option value="re_registering">Re-registering</option>
+              </Select>
+            </Field>
+          </div>
           <input
             type="file"
             accept=".csv,text/csv"

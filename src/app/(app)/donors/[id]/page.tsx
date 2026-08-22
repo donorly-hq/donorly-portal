@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import type { Campaign, DonorDetail, DonorTag } from "@/lib/types";
+import type { Campaign, CommunicationMessage, DonorDetail, DonorTag } from "@/lib/types";
 import {
   Badge,
   Button,
@@ -33,7 +33,16 @@ export default function DonorDetailPage() {
   const [detail, setDetail] = useState<DonorDetail | null>(null);
   const [allTags, setAllTags] = useState<DonorTag[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [messages, setMessages] = useState<CommunicationMessage[]>([]);
+  const [showAllMessages, setShowAllMessages] = useState(false);
   const [tab, setTab] = useState("overview");
+
+  // Deep links like /donors/{id}?tab=history (from the pledge-cards follow-up
+  // column) land on the right tab without needing a Suspense boundary.
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get("tab");
+    if (wanted) setTab(wanted);
+  }, []);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -58,11 +67,15 @@ export default function DonorDetailPage() {
       api.get<DonorDetail>(`/donors/${donorId}/detail`),
       api.get<DonorTag[]>("/donor-tags").catch(() => [] as DonorTag[]),
       api.get<Campaign[]>("/campaigns").catch(() => [] as Campaign[]),
+      api
+        .get<CommunicationMessage[]>(`/communications/messages/donor/${donorId}`)
+        .catch(() => [] as CommunicationMessage[]),
     ])
-      .then(([d, tags, camps]) => {
+      .then(([d, tags, camps, msgs]) => {
         setDetail(d);
         setAllTags(tags);
         setCampaigns(camps);
+        setMessages(msgs);
         setProfileForm({
           occupation: d.profile.occupation ?? "",
           employer: d.profile.employer ?? "",
@@ -199,6 +212,7 @@ export default function DonorDetailPage() {
         <Tab value="notes" label={`Notes (${detail.notes.length})`} />
         <Tab value="pledges" label={`Pledges (${detail.pledges.length})`} />
         <Tab value="payments" label={`Payments (${detail.payments.length})`} />
+        <Tab value="history" label={`History (${messages.length})`} />
       </Tabs>
 
       {tab === "overview" && <DonorAiPanel detail={detail} onChanged={load} />}
@@ -474,6 +488,50 @@ export default function DonorDetailPage() {
             </table>
           </Card>
         </div>
+      )}
+
+      {tab === "history" && (
+        <Card>
+          <h3 className="font-semibold text-emerald mb-4">Communication history</h3>
+          {messages.length === 0 ? (
+            <p className="text-sm text-slate-400">No messages sent or received yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {(showAllMessages ? messages : messages.slice(0, 5)).map((m) => (
+                <div
+                  key={m.id}
+                  className={`rounded-lg border p-4 ${
+                    m.direction === "inbound"
+                      ? "border-emerald-200 bg-emerald-50/50"
+                      : "border-slate-100"
+                  }`}
+                >
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                    <Badge tone={m.direction === "inbound" ? "success" : "neutral"}>
+                      {m.direction === "inbound" ? "Received" : "Sent"}
+                    </Badge>
+                    <span className="uppercase">{m.channel}</span>
+                    {m.campaignId && <span>· {campaignName(m.campaignId)}</span>}
+                    <span>· {dateTime(m.sentAt ?? m.createdAt)}</span>
+                    {m.status === "failed" && <Badge tone="danger">failed</Badge>}
+                  </div>
+                  {m.subject && <p className="mt-2 text-sm font-medium">{m.subject}</p>}
+                  <p className="mt-1 text-sm whitespace-pre-line text-slate-700">{m.body}</p>
+                </div>
+              ))}
+              {messages.length > 5 && (
+                <button
+                  onClick={() => setShowAllMessages((v) => !v)}
+                  className="text-sm text-emerald hover:underline"
+                >
+                  {showAllMessages
+                    ? "Show recent only"
+                    : `Show all ${messages.length} messages`}
+                </button>
+              )}
+            </div>
+          )}
+        </Card>
       )}
     </div>
   );

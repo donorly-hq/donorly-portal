@@ -34,6 +34,9 @@ export default function PublicSelfPledgePage() {
   const [amount, setAmount] = useState<number | "">("");
   const [customAmount, setCustomAmount] = useState("");
   const [saving, setSaving] = useState(false);
+  const [paying, setPaying] = useState(false);
+  const [stripeLive, setStripeLive] = useState(false);
+  const [justPaid, setJustPaid] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState<SelfPledgeResponse | null>(null);
   const nameRef = useRef<HTMLInputElement>(null);
@@ -43,9 +46,35 @@ export default function PublicSelfPledgePage() {
       .get<PublicThermometer>(`/public/thermometer/${params.campaignId}`)
       .then(setInfo)
       .catch((e) => setLoadError(e.message));
+    api
+      .get<{ live: boolean }>("/public/stripe/status", false)
+      .then((s) => setStripeLive(s.live))
+      .catch(() => setStripeLive(false));
+    // Returning from a successful Stripe Checkout redirect (?paid=1).
+    if (typeof window !== "undefined") {
+      setJustPaid(new URLSearchParams(window.location.search).get("paid") === "1");
+    }
   }, [params.campaignId]);
 
   const effectiveAmount = customAmount !== "" ? Number(customAmount) : amount === "" ? 0 : amount;
+
+  /** Sends the visitor to Stripe Checkout for a direct card donation. */
+  const payNow = async (payAmount: number, payerName?: string) => {
+    if (payAmount <= 0) return;
+    setPaying(true);
+    setError(null);
+    try {
+      const { url } = await api.post<{ url: string }>(
+        `/public/campaigns/${params.campaignId}/checkout`,
+        { amount: payAmount, donorName: payerName || undefined },
+        false,
+      );
+      window.location.href = url;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to start payment");
+      setPaying(false);
+    }
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,6 +134,12 @@ export default function PublicSelfPledgePage() {
           {info.campaignName}
         </h1>
 
+        {justPaid ? (
+          <div className="mt-4 rounded-xl border border-gold/25 bg-gold-50 px-4 py-3 text-center text-sm text-gold-dark">
+            JazakAllah khair — your card payment was received. A receipt will follow by email.
+          </div>
+        ) : null}
+
         {saved ? (
           <div className="mt-8 rounded-2xl border border-gold/25 bg-gold-50 p-6 text-center">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gold text-2xl font-bold text-white">
@@ -122,15 +157,32 @@ export default function PublicSelfPledgePage() {
               A volunteer from {saved.organizationName} will follow up with you about payment.
             </p>
             <div className="mt-5 space-y-2">
-              <button
-                type="button"
-                disabled
-                title="Online payment coming soon"
-                className="w-full cursor-not-allowed rounded-xl bg-emerald/30 px-4 py-3 text-sm font-semibold text-white"
-              >
-                Pay now with card
-              </button>
-              <p className="text-[11px] text-black/40">Online payment coming soon</p>
+              {stripeLive ? (
+                <button
+                  type="button"
+                  disabled={paying}
+                  onClick={() => payNow(saved.amount, saved.donorName)}
+                  className="w-full rounded-xl bg-emerald px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-light disabled:opacity-50"
+                >
+                  {paying ? "Opening secure checkout…" : "Pay now with card"}
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    disabled
+                    title="Online payment is not active for this organization"
+                    className="w-full cursor-not-allowed rounded-xl bg-emerald/30 px-4 py-3 text-sm font-semibold text-white"
+                  >
+                    Pay now with card
+                  </button>
+                  <p className="text-[11px] text-black/40">
+                    Online payment for this organization is not active yet — a volunteer will
+                    collect your donation.
+                  </p>
+                </>
+              )}
+              {error ? <p className="text-sm text-red-600">{error}</p> : null}
               <button
                 type="button"
                 onClick={pledgeAgain}
@@ -215,9 +267,24 @@ export default function PublicSelfPledgePage() {
                 ? `Pledge ${money.format(effectiveAmount)}`
                 : "Pledge"}
             </button>
+            {stripeLive ? (
+              <button
+                type="button"
+                disabled={paying || effectiveAmount <= 0}
+                onClick={() => payNow(effectiveAmount, name.trim() || undefined)}
+                className="w-full rounded-xl border border-emerald/25 bg-white px-4 py-3 text-sm font-semibold text-emerald transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {paying
+                  ? "Opening secure checkout…"
+                  : effectiveAmount > 0
+                  ? `Pay ${money.format(effectiveAmount)} now with card`
+                  : "Pay now with card"}
+              </button>
+            ) : null}
             <p className="text-center text-[11px] text-black/40">
-              No payment is taken now — this records your pledge with{" "}
-              {info.organizationName}.
+              {stripeLive
+                ? "Pledge to pay later, or pay right now by card."
+                : `No payment is taken now — this records your pledge with ${info.organizationName}.`}
             </p>
           </form>
         )}

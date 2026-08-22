@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import type { Campaign, PledgeCard, PledgeCardScan } from "@/lib/types";
+import type { Campaign, PledgeCard, PledgeCardScan, TeamMember } from "@/lib/types";
 import {
   Badge,
   Button,
@@ -30,7 +31,26 @@ const emptyForm = {
   amount: "",
   paymentMethod: "cash",
   notes: "",
+  pointOfContactUserId: "",
+  batch: "",
 };
+
+const emptyCardFilters = {
+  batch: "",
+  minAmount: "",
+  maxAmount: "",
+  location: "",
+  compliance: "",
+};
+
+const COMPLIANCE_OPTIONS = [
+  { value: "ok", label: "OK" },
+  { value: "non_compliant", label: "Non-compliant" },
+  { value: "claims_paid", label: "Claims paid" },
+  { value: "non_responsive", label: "Non-responsive" },
+];
+
+const SPECIAL_STATUSES = ["needs_verification", "claims_paid", "non_responsive"];
 
 /**
  * Reads a photo and downscales it on a canvas so we upload a small JPEG
@@ -64,11 +84,15 @@ export default function PledgeCardsPage() {
 
   const [cards, setCards] = useState<PledgeCard[] | null>(null);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [filter, setFilter] = useState<"all" | "pending">("pending");
+  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [filter, setFilter] = useState<"all" | "pending" | "verification">("pending");
+  const [cardFilters, setCardFilters] = useState(emptyCardFilters);
+  const [batches, setBatches] = useState<string[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [policy, setPolicy] = useState<{ autoApprove: boolean; hours: number } | null>(null);
 
   /* ── scan flow state ─────────────────────────────────── */
   const [mode, setMode] = useState<"manual" | "scan">("manual");
@@ -80,18 +104,52 @@ export default function PledgeCardsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(() => {
-    const path = filter === "pending" ? "/pledge-cards/pending" : "/pledge-cards";
-    Promise.all([api.get<PledgeCard[]>(path), api.get<Campaign[]>("/campaigns")])
+    const params = new URLSearchParams();
+    if (filter === "pending") params.set("status", "pending");
+    if (cardFilters.batch) params.set("batch", cardFilters.batch);
+    if (cardFilters.minAmount) params.set("minAmount", cardFilters.minAmount);
+    if (cardFilters.maxAmount) params.set("maxAmount", cardFilters.maxAmount);
+    if (cardFilters.location) params.set("location", cardFilters.location);
+    if (cardFilters.compliance) params.set("compliance", cardFilters.compliance);
+    const qs = params.toString();
+    Promise.all([
+      api.get<PledgeCard[]>(`/pledge-cards${qs ? `?${qs}` : ""}`),
+      api.get<Campaign[]>("/campaigns"),
+    ])
       .then(([c, camps]) => {
-        setCards(c);
+        // The verification queue is the three special statuses.
+        setCards(
+          filter === "verification"
+            ? c.filter((card) => SPECIAL_STATUSES.includes(card.verificationStatus))
+            : c
+        );
         setCampaigns(camps);
       })
       .catch((e) => setError(e.message));
-  }, [filter]);
+  }, [filter, cardFilters]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  // One unfiltered fetch to learn which batches exist; default the filter to
+  // the pilot batch so the team lands on the 1,200-card queue by default.
+  useEffect(() => {
+    api.get<TeamMember[]>("/team/assignable").then(setMembers).catch(() => setMembers([]));
+    api
+      .get<{ autoApprove: boolean; hours: number }>("/pledge-cards/auto-approve-policy")
+      .then(setPolicy)
+      .catch(() => setPolicy(null));
+    api
+      .get<PledgeCard[]>("/pledge-cards")
+      .then((all) => {
+        const found = [...new Set(all.map((c) => c.batch).filter((b): b is string => Boolean(b)))];
+        setBatches(found);
+        const pilot = found.find((b) => /pilot/i.test(b));
+        if (pilot) setCardFilters((f) => (f.batch ? f : { ...f, batch: pilot }));
+      })
+      .catch(() => setBatches([]));
+  }, []);
 
   const set = (field: keyof typeof emptyForm) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -129,7 +187,8 @@ export default function PledgeCardsPage() {
       setScan(result);
       setUseMatchedDonor(Boolean(result.matchedDonorId));
       // Pre-fill the form; every field stays editable for verification.
-      setForm({
+      setForm((prev) => ({
+        ...prev,
         donorFullName: result.donorFullName ?? "",
         donorEmail: result.donorEmail ?? "",
         donorPhone: result.donorPhone ?? "",
@@ -139,7 +198,7 @@ export default function PledgeCardsPage() {
         amount: result.amount != null ? String(result.amount) : "",
         paymentMethod: result.paymentMethod ?? "cash",
         notes: result.notes ?? "",
-      });
+      }));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not read the card");
     } finally {
@@ -165,6 +224,8 @@ export default function PledgeCardsPage() {
         imageUrl: photo || undefined,
         extractedJson: scan?.extractedJson || undefined,
         notes: form.notes || undefined,
+        pointOfContactUserId: form.pointOfContactUserId || undefined,
+        batch: form.batch || undefined,
       });
       setForm(emptyForm);
       setModalOpen(false);
@@ -177,8 +238,30 @@ export default function PledgeCardsPage() {
   };
 
   const updateStatus = async (id: string, status: string) => {
-    await api.patch(`/pledge-cards/${id}/status`, { status });
+    try {
+      await api.patch(`/pledge-cards/${id}/status`, { status });
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update status");
+    }
+  };
+
+  const bumpFollowUp = async (id: string) => {
+    await api.post(`/pledge-cards/${id}/follow-up`);
     load();
+  };
+
+  const savePolicy = async (next: { autoApprove: boolean; hours: number }) => {
+    setPolicy(next);
+    try {
+      const saved = await api.put<{ autoApprove: boolean; hours: number }>(
+        "/pledge-cards/auto-approve-policy",
+        next
+      );
+      setPolicy(saved);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save policy");
+    }
   };
 
   if (error && !cards) return <p className="text-red-600">{error}</p>;
@@ -188,8 +271,11 @@ export default function PledgeCardsPage() {
     if (s === "approved") return "success" as const;
     if (s === "rejected") return "danger" as const;
     if (s === "reviewed") return "info" as const;
+    if (SPECIAL_STATUSES.includes(s)) return "danger" as const;
     return "warning" as const;
   };
+
+  const filtersActive = Object.values(cardFilters).some(Boolean);
 
   const showCaptureStep = mode === "scan" && !scan;
 
@@ -210,8 +296,32 @@ export default function PledgeCardsPage() {
         }
       />
 
-      <div className="mb-4 flex gap-2">
-        {(["pending", "all"] as const).map((f) => (
+      {policy && canWrite ? (
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg bg-slate-50 px-4 py-2 text-sm text-slate-600">
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={policy.autoApprove}
+              onChange={(e) => savePolicy({ ...policy, autoApprove: e.target.checked })}
+            />
+            Auto-approve pending cards after
+          </label>
+          <input
+            type="number"
+            min={1}
+            max={168}
+            value={policy.hours}
+            disabled={!policy.autoApprove}
+            onChange={(e) => setPolicy({ ...policy, hours: Number(e.target.value) })}
+            onBlur={() => savePolicy(policy)}
+            className="w-16 rounded border border-slate-200 px-2 py-1 text-sm disabled:opacity-50"
+          />
+          <span>hours (approved cards automatically become pledges)</span>
+        </div>
+      ) : null}
+
+      <div className="mb-4 flex flex-wrap gap-2">
+        {(["pending", "verification", "all"] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -219,10 +329,67 @@ export default function PledgeCardsPage() {
               filter === f ? "bg-emerald text-white" : "bg-slate-100 text-slate-600"
             }`}
           >
-            {f === "pending" ? "Pending review" : "All cards"}
+            {f === "pending"
+              ? "Pending review"
+              : f === "verification"
+                ? "Needs verification"
+                : "All cards"}
           </button>
         ))}
       </div>
+
+      {/* ── filter bar: amount, location, compliance, batch ── */}
+      <Card className="mb-4 !p-4">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
+          <Select
+            value={cardFilters.batch}
+            onChange={(e) => setCardFilters({ ...cardFilters, batch: e.target.value })}
+          >
+            <option value="">All batches</option>
+            {batches.map((b) => (
+              <option key={b} value={b}>
+                {b}
+              </option>
+            ))}
+          </Select>
+          <Input
+            type="number"
+            placeholder="Min amount"
+            value={cardFilters.minAmount}
+            onChange={(e) => setCardFilters({ ...cardFilters, minAmount: e.target.value })}
+          />
+          <Input
+            type="number"
+            placeholder="Max amount"
+            value={cardFilters.maxAmount}
+            onChange={(e) => setCardFilters({ ...cardFilters, maxAmount: e.target.value })}
+          />
+          <Input
+            placeholder="City or state"
+            value={cardFilters.location}
+            onChange={(e) => setCardFilters({ ...cardFilters, location: e.target.value })}
+          />
+          <Select
+            value={cardFilters.compliance}
+            onChange={(e) => setCardFilters({ ...cardFilters, compliance: e.target.value })}
+          >
+            <option value="">Any compliance</option>
+            {COMPLIANCE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </Select>
+          {filtersActive && (
+            <button
+              onClick={() => setCardFilters(emptyCardFilters)}
+              className="text-sm text-emerald hover:underline text-left"
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
+      </Card>
 
       <Card className="overflow-x-auto p-0">
         <table className="w-full text-sm">
@@ -232,6 +399,8 @@ export default function PledgeCardsPage() {
               <th className="px-4 py-3">Donor</th>
               <th className="px-4 py-3">Campaign</th>
               <th className="px-4 py-3">Amount</th>
+              <th className="px-4 py-3">POC</th>
+              <th className="px-4 py-3">Follow-ups</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Submitted</th>
               {canWrite ? <th className="px-4 py-3" /> : null}
@@ -253,11 +422,49 @@ export default function PledgeCardsPage() {
                     <span className="text-slate-300">—</span>
                   )}
                 </td>
-                <td className="px-4 py-3 font-medium">{c.donorName ?? "—"}</td>
+                <td className="px-4 py-3 font-medium">
+                  {c.donorId ? (
+                    <Link href={`/donors/${c.donorId}`} className="hover:underline">
+                      {c.donorName ?? "—"}
+                    </Link>
+                  ) : (
+                    c.donorName ?? "—"
+                  )}
+                  {c.batch ? (
+                    <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">
+                      {c.batch}
+                    </span>
+                  ) : null}
+                </td>
                 <td className="px-4 py-3">{c.campaignName ?? "—"}</td>
                 <td className="px-4 py-3">{currency(c.amount)}</td>
+                <td className="px-4 py-3 text-slate-600">{c.pointOfContactName ?? "—"}</td>
                 <td className="px-4 py-3">
-                  <Badge tone={statusTone(c.verificationStatus)}>{c.verificationStatus}</Badge>
+                  {c.donorId ? (
+                    <Link
+                      href={`/donors/${c.donorId}?tab=history`}
+                      className="text-emerald hover:underline"
+                      title="Open communication and follow-up history"
+                    >
+                      {c.followUpCount}
+                    </Link>
+                  ) : (
+                    c.followUpCount
+                  )}
+                  {canWrite && !["approved", "rejected"].includes(c.verificationStatus) ? (
+                    <button
+                      className="ml-2 text-xs text-slate-400 hover:text-emerald"
+                      title="Record a follow-up attempt"
+                      onClick={() => bumpFollowUp(c.id)}
+                    >
+                      +1
+                    </button>
+                  ) : null}
+                </td>
+                <td className="px-4 py-3">
+                  <Badge tone={statusTone(c.verificationStatus)}>
+                    {c.verificationStatus.replaceAll("_", " ")}
+                  </Badge>
                 </td>
                 <td className="px-4 py-3 text-slate-500">{dateTime(c.createdAt)}</td>
                 {canWrite ? (
@@ -271,11 +478,43 @@ export default function PledgeCardsPage() {
                           Approve
                         </button>
                         <button
+                          className="text-xs text-amber-600 hover:underline"
+                          onClick={() => updateStatus(c.id, "needs_verification")}
+                        >
+                          Needs check
+                        </button>
+                        <button
                           className="text-xs text-red-600 hover:underline"
                           onClick={() => updateStatus(c.id, "rejected")}
                         >
                           Reject
                         </button>
+                      </>
+                    )}
+                    {SPECIAL_STATUSES.includes(c.verificationStatus) && (
+                      <>
+                        <button
+                          className="text-xs text-emerald hover:underline"
+                          onClick={() => updateStatus(c.id, "approved")}
+                        >
+                          Approve
+                        </button>
+                        {c.verificationStatus !== "claims_paid" && (
+                          <button
+                            className="text-xs text-slate-500 hover:underline"
+                            onClick={() => updateStatus(c.id, "claims_paid")}
+                          >
+                            Claims paid
+                          </button>
+                        )}
+                        {c.verificationStatus !== "non_responsive" && (
+                          <button
+                            className="text-xs text-slate-500 hover:underline"
+                            onClick={() => updateStatus(c.id, "non_responsive")}
+                          >
+                            Non-responsive
+                          </button>
+                        )}
                       </>
                     )}
                   </td>
@@ -284,7 +523,7 @@ export default function PledgeCardsPage() {
             ))}
             {cards.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-slate-400">
+                <td colSpan={9} className="px-4 py-10 text-center text-slate-400">
                   No pledge cards in this queue.
                 </td>
               </tr>
@@ -466,6 +705,32 @@ export default function PledgeCardsPage() {
                   <option value="check">Check</option>
                   <option value="card">Card</option>
                 </Select>
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Point of contact">
+                <Select value={form.pointOfContactUserId} onChange={set("pointOfContactUserId")}>
+                  <option value="">Me (default)</option>
+                  {members.map((m) => (
+                    <option key={m.userId} value={m.userId}>
+                      {m.fullName}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Batch">
+                <Input
+                  value={form.batch}
+                  onChange={set("batch")}
+                  placeholder={'e.g. "Pilot 1200"'}
+                  list="pledge-card-batches"
+                />
+                <datalist id="pledge-card-batches">
+                  {batches.map((b) => (
+                    <option key={b} value={b} />
+                  ))}
+                </datalist>
               </Field>
             </div>
 

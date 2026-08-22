@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import type { Campaign } from "@/lib/types";
+import type { Campaign, TeamMember } from "@/lib/types";
 import {
   Badge,
   Button,
@@ -18,12 +18,22 @@ import {
   currency,
 } from "@/components/ui";
 
-const emptyForm = { name: "", campaignType: "general", goalAmount: "", status: "active" };
+// New campaigns start as drafts: targeting and messaging get configured before launch.
+const emptyForm = {
+  name: "",
+  campaignType: "general",
+  goalAmount: "",
+  status: "draft",
+  startDate: "",
+  endDate: "",
+  managedByUserId: "",
+};
 
 export default function CampaignsPage() {
   const { hasPermission } = useAuth();
   const canManage = hasPermission("campaigns.manage");
   const [campaigns, setCampaigns] = useState<Campaign[] | null>(null);
+  const [members, setMembers] = useState<TeamMember[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -34,7 +44,10 @@ export default function CampaignsPage() {
       .get<Campaign[]>("/campaigns")
       .then(setCampaigns)
       .catch((e) => setError(e.message));
-  }, []);
+    if (canManage) {
+      api.get<TeamMember[]>("/team/assignable").then(setMembers).catch(() => setMembers([]));
+    }
+  }, [canManage]);
 
   useEffect(() => {
     load();
@@ -50,6 +63,9 @@ export default function CampaignsPage() {
         campaignType: form.campaignType,
         goalAmount: form.goalAmount ? Number(form.goalAmount) : 0,
         status: form.status,
+        startDate: form.startDate || undefined,
+        endDate: form.endDate || undefined,
+        managedByUserId: form.managedByUserId || undefined,
       });
       setForm(emptyForm);
       setModalOpen(false);
@@ -110,13 +126,46 @@ export default function CampaignsPage() {
                 onChange={(e) => setForm({ ...form, goalAmount: e.target.value })}
               />
             </Field>
-            <Field label="Type">
-              <Input
+            <Field label="Run by">
+              <Select
                 value={form.campaignType}
                 onChange={(e) => setForm({ ...form, campaignType: e.target.value })}
+              >
+                <option value="general">General</option>
+                <option value="organizer_run">Organizer-run</option>
+                <option value="ambassador_run">Ambassador-run</option>
+              </Select>
+            </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Start date">
+              <Input
+                type="date"
+                value={form.startDate}
+                onChange={(e) => setForm({ ...form, startDate: e.target.value })}
+              />
+            </Field>
+            <Field label="End date">
+              <Input
+                type="date"
+                value={form.endDate}
+                onChange={(e) => setForm({ ...form, endDate: e.target.value })}
               />
             </Field>
           </div>
+          <Field label="Managed by">
+            <Select
+              value={form.managedByUserId}
+              onChange={(e) => setForm({ ...form, managedByUserId: e.target.value })}
+            >
+              <option value="">Not assigned yet</option>
+              {members.map((m) => (
+                <option key={m.userId} value={m.userId}>
+                  {m.fullName} {m.roleName ? `(${m.roleName})` : ""}
+                </option>
+              ))}
+            </Select>
+          </Field>
           <Field label="Status">
             <Select
               value={form.status}
@@ -128,6 +177,10 @@ export default function CampaignsPage() {
               <option value="completed">Completed</option>
             </Select>
           </Field>
+          <p className="text-xs text-black/40">
+            New campaigns start as drafts — set up the audience and messaging on the campaign
+            page, then switch to Active to launch.
+          </p>
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>

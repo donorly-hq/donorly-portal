@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import type { Donor, PageResponse, PaymentRecord, Pledge } from "@/lib/types";
+import type { Campaign, Donor, PageResponse, PaymentRecord, Pledge } from "@/lib/types";
 import {
   Badge,
   Button,
@@ -28,9 +28,13 @@ export default function PaymentsPage() {
   const [page, setPage] = useState(0);
   const [pledges, setPledges] = useState<Pledge[]>([]);
   const [donors, setDonors] = useState<Donor[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState({
+    mode: "pledge" as "pledge" | "direct",
     pledgeId: "",
+    campaignId: "",
+    donorId: "",
     amount: "",
     paymentMethod: "cash",
     reference: "",
@@ -38,17 +42,21 @@ export default function PaymentsPage() {
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [stripeLive, setStripeLive] = useState<boolean | null>(null);
+  const [noticeDismissed, setNoticeDismissed] = useState(false);
 
   const load = useCallback(() => {
     Promise.all([
       api.get<PageResponse<PaymentRecord>>(`/payments?page=${page}&size=50`),
       api.get<Pledge[]>("/pledges"),
       api.get<Donor[]>("/donors"),
+      api.get<Campaign[]>("/campaigns"),
     ])
-      .then(([p, pl, d]) => {
+      .then(([p, pl, d, c]) => {
         setPageData(p);
         setPledges(pl);
         setDonors(d);
+        setCampaigns(c);
         if (pl.length) {
           setForm((f) => (f.pledgeId ? f : { ...f, pledgeId: pl[0].id }));
         }
@@ -59,6 +67,13 @@ export default function PaymentsPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    api
+      .get<{ stripeLive: boolean }>("/payments/gateway-status")
+      .then((s) => setStripeLive(s.stripeLive))
+      .catch(() => setStripeLive(null));
+  }, []);
 
   const pledgeLabel = (pledgeId: string) => {
     const p = pledges.find((x) => x.id === pledgeId);
@@ -72,7 +87,10 @@ export default function PaymentsPage() {
     setSaving(true);
     try {
       await api.post("/payments", {
-        pledgeId: form.pledgeId,
+        // Pledge payment, or a direct "takaza" donation straight to a campaign.
+        pledgeId: form.mode === "pledge" ? form.pledgeId : undefined,
+        campaignId: form.mode === "direct" ? form.campaignId : undefined,
+        donorId: form.mode === "direct" ? form.donorId : undefined,
         amount: Number(form.amount),
         paymentMethod: form.paymentMethod,
         reference: form.reference || undefined,
@@ -116,12 +134,30 @@ export default function PaymentsPage() {
         }
       />
 
+      {stripeLive === false && !noticeDismissed ? (
+        <div className="mb-4 flex items-start justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <p>
+            <span className="font-semibold">Online card payments are not active.</span>{" "}
+            The live Stripe account for this module has not been connected yet — donations
+            can still be recorded manually below. Once the account is active, the public
+            campaign pages will offer &quot;Pay now&quot; automatically.
+          </p>
+          <button
+            className="shrink-0 text-xs font-medium text-amber-700 hover:underline"
+            onClick={() => setNoticeDismissed(true)}
+          >
+            Dismiss
+          </button>
+        </div>
+      ) : null}
+
       <Card className="overflow-x-auto p-0">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b text-left text-slate-500">
               <th className="px-4 py-3">Date</th>
               <th className="px-4 py-3">Donor</th>
+              <th className="px-4 py-3">Campaign</th>
               <th className="px-4 py-3">Amount</th>
               <th className="px-4 py-3">Method</th>
               <th className="px-4 py-3">Receipt</th>
@@ -136,6 +172,15 @@ export default function PaymentsPage() {
                   <Link href={`/donors/${p.donorId}`} className="text-emerald hover:underline">
                     {p.donorName ?? "—"}
                   </Link>
+                </td>
+                <td className="px-4 py-3 text-black/60">
+                  {p.campaignName ?? "—"}
+                  {p.campaignDay !== null ? (
+                    <span className="block text-xs text-black/40">
+                      Day {p.campaignDay}
+                      {p.campaignDays !== null ? ` of ${p.campaignDays}` : ""}
+                    </span>
+                  ) : null}
                 </td>
                 <td className="px-4 py-3 font-medium">{currency(p.amount)}</td>
                 <td className="px-4 py-3">{p.paymentMethod ?? "—"}</td>
@@ -160,7 +205,7 @@ export default function PaymentsPage() {
             ))}
             {payments.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-10 text-center text-slate-400">
+                <td colSpan={7} className="px-4 py-10 text-center text-slate-400">
                   No payments recorded yet.
                 </td>
               </tr>
@@ -173,19 +218,57 @@ export default function PaymentsPage() {
 
       <Modal open={modalOpen} title="Record payment" onClose={() => setModalOpen(false)}>
         <form onSubmit={handleRecord} className="space-y-4">
-          <Field label="Pledge">
+          <Field label="Payment type">
             <Select
-              value={form.pledgeId}
-              onChange={(e) => setForm({ ...form, pledgeId: e.target.value })}
-              required
+              value={form.mode}
+              onChange={(e) => setForm({ ...form, mode: e.target.value as "pledge" | "direct" })}
             >
-              {pledges.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {pledgeLabel(p.id)}
-                </option>
-              ))}
+              <option value="pledge">Against a pledge</option>
+              <option value="direct">Direct donation to a campaign (no pledge)</option>
             </Select>
           </Field>
+          {form.mode === "pledge" ? (
+            <Field label="Pledge">
+              <Select
+                value={form.pledgeId}
+                onChange={(e) => setForm({ ...form, pledgeId: e.target.value })}
+                required
+              >
+                {pledges.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {pledgeLabel(p.id)}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Campaign">
+                <Select
+                  value={form.campaignId}
+                  onChange={(e) => setForm({ ...form, campaignId: e.target.value })}
+                  required
+                >
+                  <option value="">Select a campaign...</option>
+                  {campaigns.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Donor">
+                <Select
+                  value={form.donorId}
+                  onChange={(e) => setForm({ ...form, donorId: e.target.value })}
+                  required
+                >
+                  <option value="">Select a donor...</option>
+                  {donors.map((d) => (
+                    <option key={d.id} value={d.id}>{d.fullName}</option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <Field label="Amount">
               <Input

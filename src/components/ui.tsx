@@ -214,7 +214,7 @@ export function PageHeader({
   children,
 }: {
   title: string;
-  subtitle?: string;
+  subtitle?: ReactNode;
   action?: ReactNode;
   children?: ReactNode;
 }) {
