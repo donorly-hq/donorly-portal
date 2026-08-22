@@ -13,6 +13,8 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "Donorly",
   },
+  // Chrome deprecated relying on the apple-* meta alone.
+  other: { "mobile-web-app-capable": "yes" },
   icons: {
     icon: [
       { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },

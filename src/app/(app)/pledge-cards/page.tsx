@@ -277,6 +277,10 @@ export default function PledgeCardsPage() {
 
   const filtersActive = Object.values(cardFilters).some(Boolean);
 
+  /** Approval converts the card into a pledge, which needs these three fields. */
+  const approvable = (c: PledgeCard) => Boolean(c.campaignId && c.donorId && c.amount);
+  const approveHint = "Approval creates a pledge — this card is missing a campaign, donor or amount";
+
   const showCaptureStep = mode === "scan" && !scan;
 
   return (
@@ -295,6 +299,15 @@ export default function PledgeCardsPage() {
           ) : undefined
         }
       />
+
+      {error && cards ? (
+        <div className="mb-4 flex items-start justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <span>{error}</span>
+          <button onClick={() => setError(null)} className="font-medium hover:underline">
+            Dismiss
+          </button>
+        </div>
+      ) : null}
 
       {policy && canWrite ? (
         <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg bg-slate-50 px-4 py-2 text-sm text-slate-600">
@@ -472,7 +485,9 @@ export default function PledgeCardsPage() {
                     {c.verificationStatus === "pending" && (
                       <>
                         <button
-                          className="text-xs text-emerald hover:underline"
+                          className="text-xs text-emerald hover:underline disabled:cursor-not-allowed disabled:text-slate-300 disabled:no-underline"
+                          disabled={!approvable(c)}
+                          title={approvable(c) ? undefined : approveHint}
                           onClick={() => updateStatus(c.id, "approved")}
                         >
                           Approve
@@ -494,7 +509,9 @@ export default function PledgeCardsPage() {
                     {SPECIAL_STATUSES.includes(c.verificationStatus) && (
                       <>
                         <button
-                          className="text-xs text-emerald hover:underline"
+                          className="text-xs text-emerald hover:underline disabled:cursor-not-allowed disabled:text-slate-300 disabled:no-underline"
+                          disabled={!approvable(c)}
+                          title={approvable(c) ? undefined : approveHint}
                           onClick={() => updateStatus(c.id, "approved")}
                         >
                           Approve
