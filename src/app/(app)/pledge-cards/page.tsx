@@ -4,7 +4,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import type { Campaign, PledgeCard, PledgeCardScan, TeamMember } from "@/lib/types";
+import { readSpreadsheetRows } from "@/lib/csv";
+import type {
+  Campaign,
+  DonorImportResult,
+  PledgeCard,
+  PledgeCardImportRow,
+  PledgeCardScan,
+  TeamMember,
+} from "@/lib/types";
 import {
   Badge,
   Button,
@@ -78,6 +86,70 @@ async function downscalePhoto(file: File, maxDim = 1600): Promise<string> {
   return canvas.toDataURL("image/jpeg", 0.85);
 }
 
+/**
+ * Maps arbitrary spreadsheet headers to pledge-card rows. Name and a positive
+ * amount are required; everything else is optional and fuzzy-matched by header.
+ */
+function mapRowsToPledgeCards(rows: string[][]): {
+  cards: PledgeCardImportRow[];
+  problems: string[];
+} {
+  if (rows.length < 2) {
+    return { cards: [], problems: ["File needs a header row and at least one data row."] };
+  }
+  const headers = rows[0].map((h) => h.trim().toLowerCase());
+  const col = (...keys: string[]) =>
+    headers.findIndex((h) => keys.some((k) => h.includes(k)));
+  const nameIdx = col("name", "donor");
+  const emailIdx = col("email", "e-mail");
+  const phoneIdx = col("phone", "mobile", "cell");
+  const cityIdx = col("city", "town");
+  const amountIdx = col("amount", "pledge", "total");
+  const methodIdx = col("method", "payment");
+  const campaignIdx = col("campaign", "fund", "cause");
+  const notesIdx = col("note", "comment", "remark");
+  const typeIdx = headers.findIndex((h) => h.includes("type") && !h.includes("payment"));
+
+  if (nameIdx === -1) {
+    return { cards: [], problems: ["Could not find a donor name column in the header row."] };
+  }
+  if (amountIdx === -1) {
+    return { cards: [], problems: ["Could not find an amount column in the header row."] };
+  }
+
+  const cell = (r: string[], idx: number) =>
+    idx >= 0 ? (r[idx] ?? "").trim() || undefined : undefined;
+
+  const cards: PledgeCardImportRow[] = [];
+  const problems: string[] = [];
+  rows.slice(1).forEach((r, i) => {
+    const donorFullName = (r[nameIdx] ?? "").trim();
+    if (!donorFullName) {
+      problems.push(`Row ${i + 2}: missing donor name — skipped`);
+      return;
+    }
+    const rawAmount = (r[amountIdx] ?? "").trim();
+    // Tolerate "$1,500" style values from spreadsheets.
+    const amount = Number(rawAmount.replace(/[^0-9.-]/g, ""));
+    if (!rawAmount || !Number.isFinite(amount) || amount <= 0) {
+      problems.push(`Row ${i + 2}: missing or invalid amount — skipped`);
+      return;
+    }
+    cards.push({
+      donorFullName,
+      donorEmail: cell(r, emailIdx),
+      donorPhone: cell(r, phoneIdx),
+      donorCity: cell(r, cityIdx),
+      donorType: cell(r, typeIdx),
+      amount,
+      paymentMethod: cell(r, methodIdx),
+      campaignName: cell(r, campaignIdx),
+      notes: cell(r, notesIdx),
+    });
+  });
+  return { cards, problems };
+}
+
 export default function PledgeCardsPage() {
   const { hasPermission } = useAuth();
   const canWrite = hasPermission("pledges.write");
@@ -93,6 +165,17 @@ export default function PledgeCardsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [policy, setPolicy] = useState<{ autoApprove: boolean; hours: number } | null>(null);
+
+  /* ── bulk import state ───────────────────────────────── */
+  const [importOpen, setImportOpen] = useState(false);
+  const [importRows, setImportRows] = useState<PledgeCardImportRow[]>([]);
+  const [importProblems, setImportProblems] = useState<string[]>([]);
+  const [importResult, setImportResult] = useState<DonorImportResult | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importFileName, setImportFileName] = useState<string | null>(null);
+  const [importCampaignId, setImportCampaignId] = useState("");
+  const [importBatch, setImportBatch] = useState("");
+  const [importPoc, setImportPoc] = useState("");
 
   /* ── scan flow state ─────────────────────────────────── */
   const [mode, setMode] = useState<"manual" | "scan">("manual");
@@ -251,6 +334,54 @@ export default function PledgeCardsPage() {
     load();
   };
 
+  const openImport = () => {
+    setImportRows([]);
+    setImportProblems([]);
+    setImportResult(null);
+    setImportFileName(null);
+    setImportCampaignId("");
+    setImportBatch("");
+    setImportPoc("");
+    setError(null);
+    setImportOpen(true);
+  };
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportFileName(file.name);
+    setImportResult(null);
+    try {
+      const rows = await readSpreadsheetRows(file);
+      const { cards: parsed, problems } = mapRowsToPledgeCards(rows);
+      setImportRows(parsed);
+      setImportProblems(problems);
+    } catch {
+      setImportRows([]);
+      setImportProblems(["Could not read this file. Use a .csv, .xlsx or .xls export."]);
+    }
+  };
+
+  const handleImportSubmit = async () => {
+    if (importRows.length === 0) return;
+    setImporting(true);
+    try {
+      const result = await api.post<DonorImportResult>("/pledge-cards/import", {
+        cards: importRows.slice(0, 1000),
+        defaultCampaignId: importCampaignId || undefined,
+        batch: importBatch || undefined,
+        pointOfContactUserId: importPoc || undefined,
+      });
+      setImportResult(result);
+      setImportRows([]);
+      load();
+    } catch (err) {
+      setImportProblems([err instanceof Error ? err.message : "Import failed"]);
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const savePolicy = async (next: { autoApprove: boolean; hours: number }) => {
     setPolicy(next);
     try {
@@ -291,6 +422,9 @@ export default function PledgeCardsPage() {
         action={
           canWrite ? (
             <div className="flex gap-2">
+              <Button variant="secondary" onClick={openImport}>
+                Import file
+              </Button>
               <Button variant="secondary" onClick={() => openModal("manual")}>
                 Add manually
               </Button>
@@ -548,6 +682,118 @@ export default function PledgeCardsPage() {
           </tbody>
         </table>
       </Card>
+
+      {/* ── bulk import from CSV / Excel ───────────────────── */}
+      <Modal
+        open={importOpen}
+        title="Import pledge cards"
+        onClose={() => setImportOpen(false)}
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-600">
+            Upload a CSV or Excel export with one pledge per row. We look for donor
+            name, amount, and optionally email, phone, city, payment method, campaign
+            and notes columns. Imported cards land in the pending review queue.
+          </p>
+
+          <label className="flex h-28 w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-slate-300 text-slate-500 hover:border-emerald hover:text-emerald">
+            <input
+              type="file"
+              accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+              className="hidden"
+              onChange={handleImportFile}
+            />
+            <span className="text-2xl">📄</span>
+            <span className="text-sm font-medium">
+              {importFileName ?? "Choose a .csv, .xlsx or .xls file"}
+            </span>
+          </label>
+
+          {importRows.length > 0 ? (
+            <>
+              <div className="rounded-lg bg-emerald/10 px-3 py-2 text-sm text-emerald-900">
+                {importRows.length} pledge{importRows.length === 1 ? "" : "s"} ready to
+                import{importRows.length > 1000 ? " (first 1000 will be sent)" : ""}.
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label="Campaign for rows without one">
+                  <Select
+                    value={importCampaignId}
+                    onChange={(e) => setImportCampaignId(e.target.value)}
+                  >
+                    <option value="">— None —</option>
+                    {campaigns.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                <Field label="Batch label">
+                  <Input
+                    value={importBatch}
+                    onChange={(e) => setImportBatch(e.target.value)}
+                    placeholder={'e.g. "Pilot 1200"'}
+                    list="import-batches"
+                  />
+                  <datalist id="import-batches">
+                    {batches.map((b) => (
+                      <option key={b} value={b} />
+                    ))}
+                  </datalist>
+                </Field>
+              </div>
+              <Field label="Point of contact for all cards">
+                <Select value={importPoc} onChange={(e) => setImportPoc(e.target.value)}>
+                  <option value="">Me (default)</option>
+                  {members.map((m) => (
+                    <option key={m.userId} value={m.userId}>
+                      {m.fullName}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </>
+          ) : null}
+
+          {importProblems.length > 0 ? (
+            <div className="max-h-32 overflow-y-auto rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              {importProblems.map((p, i) => (
+                <p key={i}>{p}</p>
+              ))}
+            </div>
+          ) : null}
+
+          {importResult ? (
+            <div className="rounded-lg bg-emerald/10 px-3 py-2 text-sm text-emerald-900">
+              Imported {importResult.imported} card{importResult.imported === 1 ? "" : "s"},
+              skipped {importResult.skipped} duplicate{importResult.skipped === 1 ? "" : "s"}.
+              {importResult.errors.length > 0 ? (
+                <div className="mt-1 max-h-24 overflow-y-auto text-amber-800">
+                  {importResult.errors.map((er, i) => (
+                    <p key={i}>{er}</p>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={() => setImportOpen(false)}>
+              {importResult ? "Done" : "Cancel"}
+            </Button>
+            <Button
+              type="button"
+              disabled={importRows.length === 0}
+              loading={importing}
+              onClick={handleImportSubmit}
+            >
+              {importing ? "Importing…" : "Import pledge cards"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* ── full-size photo viewer ─────────────────────────── */}
       <Modal open={viewPhoto !== null} title="Pledge card photo" onClose={() => setViewPhoto(null)}>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { parseCsv } from "@/lib/csv";
 import type {
   Assignment,
   Donor,
@@ -65,37 +66,6 @@ const COMPLIANCE_LABELS: Record<string, string> = {
   claims_paid: "Claims paid",
   non_responsive: "Non-responsive",
 };
-
-/** Minimal CSV parser handling quoted fields, CRLF, and escaped quotes. */
-function parseCsv(text: string): string[][] {
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let cell = "";
-  let inQuotes = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (inQuotes) {
-      if (ch === '"') {
-        if (text[i + 1] === '"') { cell += '"'; i++; }
-        else inQuotes = false;
-      } else cell += ch;
-    } else if (ch === '"') {
-      inQuotes = true;
-    } else if (ch === ",") {
-      row.push(cell); cell = "";
-    } else if (ch === "\n" || ch === "\r") {
-      if (ch === "\r" && text[i + 1] === "\n") i++;
-      row.push(cell); cell = "";
-      if (row.some((c) => c.trim() !== "")) rows.push(row);
-      row = [];
-    } else {
-      cell += ch;
-    }
-  }
-  row.push(cell);
-  if (row.some((c) => c.trim() !== "")) rows.push(row);
-  return rows;
-}
 
 /** Maps arbitrary CSV headers to donor fields (name/email/phone/city/state/address/type/bucket). */
 function mapCsvToDonors(rows: string[][]): { donors: DonorImportRow[]; problems: string[] } {

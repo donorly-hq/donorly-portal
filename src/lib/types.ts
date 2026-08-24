@@ -77,6 +77,19 @@ export interface DonorImportResult {
   errors: string[];
 }
 
+/** One spreadsheet row for bulk pledge-card import. */
+export interface PledgeCardImportRow {
+  donorFullName: string;
+  donorEmail?: string;
+  donorPhone?: string;
+  donorCity?: string;
+  donorType?: string;
+  amount?: number;
+  paymentMethod?: string;
+  campaignName?: string;
+  notes?: string;
+}
+
 export interface DuplicateGroup {
   reason: string;
   donors: Donor[];
