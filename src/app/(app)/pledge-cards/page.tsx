@@ -165,6 +165,11 @@ export default function PledgeCardsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [policy, setPolicy] = useState<{ autoApprove: boolean; hours: number } | null>(null);
+  const [reminders, setReminders] = useState<{
+    enabled: boolean;
+    intervalDays: number;
+    maxAttempts: number;
+  } | null>(null);
 
   /* ── bulk import state ───────────────────────────────── */
   const [importOpen, setImportOpen] = useState(false);
@@ -223,6 +228,12 @@ export default function PledgeCardsPage() {
       .get<{ autoApprove: boolean; hours: number }>("/pledge-cards/auto-approve-policy")
       .then(setPolicy)
       .catch(() => setPolicy(null));
+    api
+      .get<{ enabled: boolean; intervalDays: number; maxAttempts: number }>(
+        "/pledge-cards/reminder-policy"
+      )
+      .then(setReminders)
+      .catch(() => setReminders(null));
     api
       .get<PledgeCard[]>("/pledge-cards")
       .then((all) => {
@@ -395,6 +406,23 @@ export default function PledgeCardsPage() {
     }
   };
 
+  const saveReminders = async (next: {
+    enabled: boolean;
+    intervalDays: number;
+    maxAttempts: number;
+  }) => {
+    setReminders(next);
+    try {
+      const saved = await api.put<{ enabled: boolean; intervalDays: number; maxAttempts: number }>(
+        "/pledge-cards/reminder-policy",
+        next
+      );
+      setReminders(saved);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save reminder policy");
+    }
+  };
+
   if (error && !cards) return <p className="text-red-600">{error}</p>;
   if (!cards) return <Spinner />;
 
@@ -464,6 +492,41 @@ export default function PledgeCardsPage() {
             className="w-16 rounded border border-slate-200 px-2 py-1 text-sm disabled:opacity-50"
           />
           <span>hours (approved cards automatically become pledges)</span>
+        </div>
+      ) : null}
+
+      {reminders && canWrite ? (
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg bg-slate-50 px-4 py-2 text-sm text-slate-600">
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={reminders.enabled}
+              onChange={(e) => saveReminders({ ...reminders, enabled: e.target.checked })}
+            />
+            AI reminder emails every
+          </label>
+          <input
+            type="number"
+            min={1}
+            max={60}
+            value={reminders.intervalDays}
+            disabled={!reminders.enabled}
+            onChange={(e) => setReminders({ ...reminders, intervalDays: Number(e.target.value) })}
+            onBlur={() => saveReminders(reminders)}
+            className="w-16 rounded border border-slate-200 px-2 py-1 text-sm disabled:opacity-50"
+          />
+          <span>days, up to</span>
+          <input
+            type="number"
+            min={1}
+            max={10}
+            value={reminders.maxAttempts}
+            disabled={!reminders.enabled}
+            onChange={(e) => setReminders({ ...reminders, maxAttempts: Number(e.target.value) })}
+            onBlur={() => saveReminders(reminders)}
+            className="w-16 rounded border border-slate-200 px-2 py-1 text-sm disabled:opacity-50"
+          />
+          <span>attempts (then the card escalates to its point of contact)</span>
         </div>
       ) : null}
 
