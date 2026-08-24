@@ -10,6 +10,8 @@ interface NavItem {
   label: string;
   href: string;
   permission?: string;
+  /** Module parked while each module is groomed one by one — remove the flag to re-enable. */
+  disabled?: boolean;
 }
 
 interface NavGroup {
@@ -38,7 +40,7 @@ const NAV: NavGroup[] = [
     heading: "Fundraising",
     orgScoped: true,
     items: [
-      { label: "Campaigns",    href: "/campaigns",    permission: "campaigns.read" },
+      { label: "Campaigns",    href: "/campaigns",    permission: "campaigns.read", disabled: true },
       { label: "Quick pledge", href: "/quick-pledge", permission: "pledges.write" },
       { label: "Follow-ups",   href: "/follow-ups",   permission: "followups.read" },
       { label: "Pledge cards", href: "/pledge-cards", permission: "pledges.read" },
@@ -48,18 +50,18 @@ const NAV: NavGroup[] = [
     heading: "Finance",
     orgScoped: true,
     items: [
-      { label: "Payments", href: "/payments", permission: "payments.manage" },
-      { label: "Reports",  href: "/reports",  permission: "reports.view" },
+      { label: "Payments", href: "/payments", permission: "payments.manage", disabled: true },
+      { label: "Reports",  href: "/reports",  permission: "reports.view", disabled: true },
     ],
   },
   {
     heading: "Events",
     orgScoped: true,
     items: [
-      { label: "Events",    href: "/events",    permission: "events.read" },
-      { label: "Townhalls", href: "/townhalls", permission: "townhalls.read" },
-      { label: "My shifts", href: "/my-shifts", permission: "volunteers.read" },
-      { label: "Inventory", href: "/inventory", permission: "inventory.read" },
+      { label: "Events",    href: "/events",    permission: "events.read", disabled: true },
+      { label: "Townhalls", href: "/townhalls", permission: "townhalls.read", disabled: true },
+      { label: "My shifts", href: "/my-shifts", permission: "volunteers.read", disabled: true },
+      { label: "Inventory", href: "/inventory", permission: "inventory.read", disabled: true },
     ],
   },
   {
@@ -77,7 +79,7 @@ const NAV: NavGroup[] = [
     orgScoped: true,
     items: [
       { label: "Team", href: "/settings/team", permission: "users.manage" },
-      { label: "Audit log", href: "/settings/audit", permission: "org.settings.manage" },
+      { label: "Audit log", href: "/settings/audit", permission: "org.settings.manage", disabled: true },
     ],
   },
   {
@@ -118,6 +120,20 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                 {group.heading}
               </p>
               {visible.map((item) => {
+                if (item.disabled) {
+                  return (
+                    <span
+                      key={item.href}
+                      title="Temporarily disabled"
+                      className="flex cursor-not-allowed items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-white/30"
+                    >
+                      {item.label}
+                      <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-white/40">
+                        soon
+                      </span>
+                    </span>
+                  );
+                }
                 const active = pathname === item.href || pathname.startsWith(item.href + "/");
                 return (
                   <Link
